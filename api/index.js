@@ -68,6 +68,33 @@ module.exports = async function handler(req, res) {
             });
         }
 
+        // Database check endpoint
+        if ((pathname === '/api/db-check' || pathname === '/db-check') && req.method === 'GET') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            try {
+                // Check if students table exists and is accessible
+                const { data: studentsData, error: studentsError } = await supabase
+                    .from('students')
+                    .select('count', { count: 'exact', head: true });
+
+                const result = {
+                    students: {
+                        exists: !studentsError,
+                        count: studentsData ? studentsData : 0,
+                        error: studentsError ? studentsError.message : null
+                    }
+                };
+
+                return res.json(result);
+            } catch (err) {
+                console.error('Database check error:', err);
+                return res.status(500).json({ error: 'Database check failed', message: err.message });
+            }
+        }
+
         // GET all students from Supabase
         if (pathname === '/api/students' && req.method === 'GET') {
             if (!supabase) {
