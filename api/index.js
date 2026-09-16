@@ -27,6 +27,18 @@ function setCorsHeaders(res) {
     );
 }
 
+// Helper function to convert snake_case to camelCase
+function snakeToCamel(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(snakeToCamel);
+
+    return Object.keys(obj).reduce((acc, key) => {
+        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        acc[camelKey] = snakeToCamel(obj[key]);
+        return acc;
+    }, {});
+}
+
 // Main handler
 module.exports = async function handler(req, res) {
     setCorsHeaders(res);
@@ -150,7 +162,9 @@ module.exports = async function handler(req, res) {
                     });
                 }
                 console.log('Students fetched successfully:', data ? data.length : 0, 'students');
-                return res.json(data || []);
+                // Convert snake_case to camelCase for frontend
+                const camelCaseData = snakeToCamel(data);
+                return res.json(camelCaseData || []);
             } catch (err) {
                 console.error('Error fetching students:', err);
                 return res.status(500).json({ error: 'Failed to fetch students', message: err.message, stack: err.stack });
@@ -216,9 +230,22 @@ module.exports = async function handler(req, res) {
 
                 delete studentData.teacher;
 
+                // Convert camelCase to snake_case for Supabase
+                const dbData = {
+                    name: studentData.name,
+                    grade: studentData.grade,
+                    center: studentData.center,
+                    status: studentData.status,
+                    att_rate: studentData.attRate ? parseInt(studentData.attRate) : 100,
+                    hw_completed: studentData.hwCompleted || '0/0',
+                    exam_avg: studentData.examAvg ? parseInt(studentData.examAvg) : 0,
+                    pay_status: studentData.payStatus || 'لم يتم الدفع',
+                    general_notes: studentData.generalNotes
+                };
+
                 const { data, error } = await supabase
                     .from('students')
-                    .insert([studentData])
+                    .insert([dbData])
                     .select()
                     .single();
 
@@ -226,7 +253,9 @@ module.exports = async function handler(req, res) {
                     console.error('Supabase insert error:', error);
                     throw error;
                 }
-                return res.json(data);
+                // Convert snake_case to camelCase for frontend
+                const camelCaseData = snakeToCamel(data);
+                return res.json(camelCaseData);
             } catch (err) {
                 console.error('Error creating student:', err);
                 return res.status(500).json({ error: 'Failed to create student', message: err.message, details: err.message });
@@ -244,15 +273,29 @@ module.exports = async function handler(req, res) {
                 const studentData = req.body;
                 delete studentData.teacher;
 
+                // Convert camelCase to snake_case for Supabase
+                const dbData = {};
+                if (studentData.name !== undefined) dbData.name = studentData.name;
+                if (studentData.grade !== undefined) dbData.grade = studentData.grade;
+                if (studentData.center !== undefined) dbData.center = studentData.center;
+                if (studentData.status !== undefined) dbData.status = studentData.status;
+                if (studentData.attRate !== undefined) dbData.att_rate = parseInt(studentData.attRate);
+                if (studentData.hwCompleted !== undefined) dbData.hw_completed = studentData.hwCompleted;
+                if (studentData.examAvg !== undefined) dbData.exam_avg = parseInt(studentData.examAvg);
+                if (studentData.payStatus !== undefined) dbData.pay_status = studentData.payStatus;
+                if (studentData.generalNotes !== undefined) dbData.general_notes = studentData.generalNotes;
+
                 const { data, error } = await supabase
                     .from('students')
-                    .update(studentData)
+                    .update(dbData)
                     .eq('id', id)
                     .select()
                     .single();
 
                 if (error) throw error;
-                return res.json(data);
+                // Convert snake_case to camelCase for frontend
+                const camelCaseData = snakeToCamel(data);
+                return res.json(camelCaseData);
             } catch (err) {
                 console.error('Error updating student:', err);
                 return res.status(500).json({ error: 'Failed to update student', message: err.message });
