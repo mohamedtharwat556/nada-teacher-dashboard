@@ -65,6 +65,8 @@ module.exports = async function handler(req, res) {
                 status: 'ok',
                 supabase: supabase ? 'connected' : 'not configured',
                 supabaseUrl: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'not set',
+                supabaseKey: supabaseKey ? supabaseKey.substring(0, 20) + '...' : 'not set',
+                keyLength: supabaseKey ? supabaseKey.length : 0,
                 timestamp: new Date().toISOString()
             });
         }
