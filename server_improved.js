@@ -32,7 +32,16 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname)));
+
+// Serve static files
+app.use(express.static(path.join(__dirname), {
+    index: 'index.html',
+    setHeaders: (res, path) => {
+        if (path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
+}));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -637,12 +646,26 @@ app.post('/api/data', async (req, res) => {
     }
 });
 
-// 404 handler
-app.use((req, res) => {
+// 404 handler - for API routes only
+app.use('/api', (req, res) => {
     res.status(404).json({ 
         error: 'Not found',
-        message: `Route ${req.method} ${req.path} not found`
+        message: `API Route ${req.method} ${req.path} not found`
     });
+});
+
+// Fallback for static files (SPA support)
+app.get('*', (req, res) => {
+    // If it's an API route that wasn't caught
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ 
+            error: 'Not found',
+            message: `Route ${req.method} ${req.path} not found`
+        });
+    }
+    
+    // Otherwise serve index.html for SPA routing
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Global error handler
