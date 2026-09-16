@@ -161,6 +161,7 @@ async function fetchStudents() {
       const data = await res.json();
       // Support both key names for compatibility
       CACHED_STUDENTS = data.students || data.nada_students || [];
+      console.log('📖 Students loaded:', CACHED_STUDENTS.length);
     }
   } catch(e) { console.warn('Backend not reachable', e); }
 }
@@ -241,18 +242,22 @@ function hwBadge(status) {
  *   const results = await fetch(`/api/students?name=${name}&grade=${grade}`)
  *     .then(r => r.json());
  */
-function searchStudents(name, grade) {
+async function searchStudents(name, grade) {
+  // Always fetch fresh data before searching
+  await fetchStudents();
+
   const q = name.trim().toLowerCase();
 
   return getStudents().filter(s => {
     const nameMatch    = q === '' || s.name.toLowerCase().includes(q);
     const gradeMatch   = grade === '' || s.grade === grade;
     // Only return students that belong to the currently selected teacher.
-    // Fall back gracefully: if a student has no `teacher` field, check
-    // whether their grade is in the teacher's list.
+    // Fall back gracefully: if a student has no `teacher` field, include them
+    // and assume they belong to the current teacher (for backwards compatibility)
     const teacherGrades = TEACHER_GRADES[selectedTeacher] || [];
     const teacherMatch  = s.teacher === selectedTeacher
-                       || (!s.teacher && teacherGrades.includes(s.grade));
+                       || (!s.teacher && teacherGrades.includes(s.grade))
+                       || (!s.teacher); // Include students without teacher field
     return nameMatch && gradeMatch && teacherMatch;
   });
 }
@@ -819,8 +824,8 @@ function initSearch() {
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     // Simulate realistic async delay
-    setTimeout(() => {
-      const results = searchStudents(name, grade);
+    setTimeout(async () => {
+      const results = await searchStudents(name, grade);
       renderSearchResults(results, name);
     }, 650);
   }

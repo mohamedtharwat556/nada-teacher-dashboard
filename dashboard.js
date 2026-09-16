@@ -33,37 +33,45 @@ async function initBackend() {
 async function syncBackend(key, data) {
   window.APP_DATA[key] = data;
   try {
-    await fetch('/api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [key]: data })
-    });
+    // Try to use improved API first
+    if (key === 'students') {
+      await syncImprovedBackend(key, data);
+    } else {
+      // Fallback to legacy API
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: data })
+      });
+    }
   } catch(e) { console.error('Failed to save', e); }
 }
 
 // Also sync with the improved server API
 async function syncImprovedBackend(key, data) {
   try {
-    const endpoint = `/api/${key}`;
-    const method = 'POST';
-    await fetch(endpoint, {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    // Use the improved API endpoints
+    if (key === 'students' && Array.isArray(data)) {
+      // For array of students, use upsert
+      await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } else if (key === 'students' && typeof data === 'object') {
+      // For single student
+      await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
   } catch(e) { console.error('Failed to sync with improved API', e); }
 }
 function load(key) { return window.APP_DATA[key] || []; }
 function save(key, data) {
+  console.log('💾 Saving data:', key, data.length || 'single item');
   syncBackend(key, data);
-  // Also try to sync with improved API for better compatibility
-  if (key === 'students') {
-    data.forEach(student => {
-      if (student.id && !student.id.startsWith('_')) {
-        syncImprovedBackend('students', student);
-      }
-    });
-  }
 }
 function logActivity(studentName, action) { const a = load('activities'); a.push({id:genId(), studentName, action, timestamp:now()}); save('activities', a); }
 function getStudent(id){return load('students').find(s=>s.id===id)||{};}
@@ -370,6 +378,8 @@ function openAddStudentModal(){
     if(!data.name.trim()){showToast('من فضلك أدخل اسم الطالب.','error');return;}
     if(!data.grade){showToast('من فضلك اختر الصف الدراسي.','error');return;}
     if(!data.center){showToast('من فضلك اختر السنتر (الكاشف / سيف الدين).','error');return;}
+    // Add teacher field for compatibility with search functionality
+    data.teacher = data.center;
     var students=load('students');students.push(Object.assign({id:genId()},data));save('students',students);
     logActivity(data.name,'تمت إضافة طالب');showToast('تمت إضافة الطالب بنجاح');closeModal();renderStudents();updateNotifications();
   };
@@ -382,6 +392,8 @@ function openEditStudentModal(id){
     if(!data.name.trim()){showToast('من فضلك أدخل اسم الطالب.','error');return;}
     if(!data.grade){showToast('من فضلك اختر الصف الدراسي.','error');return;}
     if(!data.center){showToast('من فضلك اختر السنتر.','error');return;}
+    // Update teacher field for compatibility with search functionality
+    data.teacher = data.center;
     var idx=students.findIndex(function(x){return x.id===id;});
     students[idx]=Object.assign({},s,data);save('students',students);
     logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب');closeModal();renderStudents();

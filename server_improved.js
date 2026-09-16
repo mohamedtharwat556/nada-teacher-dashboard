@@ -168,6 +168,42 @@ app.get('/api/students', async (req, res) => {
     }
 });
 
+// GET search students by name and optional grade
+app.get('/api/students/search', async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+
+    try {
+        const { name, grade, teacher } = req.query;
+        
+        let query = supabase
+            .from('students')
+            .select('*');
+        
+        // Search by name (case-insensitive partial match)
+        if (name && name.trim() !== '') {
+            query = query.ilike('name', `%${name.trim()}%`);
+        }
+        
+        // Filter by grade
+        if (grade && grade.trim() !== '') {
+            query = query.eq('grade', grade);
+        }
+        
+        // Filter by teacher
+        if (teacher && teacher.trim() !== '') {
+            query = query.eq('teacher', teacher);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        res.json(data || []);
+    } catch (err) {
+        console.error('Error searching students:', err.message);
+        res.status(500).json({ error: 'Failed to search students', message: err.message });
+    }
+});
+
 // GET single student
 app.get('/api/students/:id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -192,9 +228,15 @@ app.post('/api/students', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
     try {
+        // Add teacher field if center is provided but teacher is not
+        const studentData = { ...req.body };
+        if (studentData.center && !studentData.teacher) {
+            studentData.teacher = studentData.center;
+        }
+        
         const { data, error } = await supabase
             .from('students')
-            .insert([req.body])
+            .insert([studentData])
             .select()
             .single();
         
