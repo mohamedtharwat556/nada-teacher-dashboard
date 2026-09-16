@@ -128,9 +128,49 @@
       <section id="notesSection" class="page-section hidden"></section>
       <section id="settingsSection" class="page-section hidden">
         <div class="section-header"><h2>الإعدادات</h2></div>
-        <div class="empty-state-card">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <p>قسم الإعدادات قيد التطوير</p>
+
+        <div class="settings-grid">
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div class="settings-icon danger">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </div>
+              <div>
+                <h3>مسح جميع البيانات</h3>
+                <p>حذف جميع الطلاب، الواجبات، الامتحانات، الحضور، المدفوعات والملاحظات</p>
+              </div>
+            </div>
+            <button class="btn btn-danger" onclick="showClearDataConfirmation()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              مسح جميع البيانات
+            </button>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div class="settings-icon info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div>
+                <h3>معلومات النظام</h3>
+                <p>إصدار النظام وحالة الاتصال</p>
+              </div>
+            </div>
+            <div class="system-info">
+              <div class="info-item">
+                <span class="info-label">الإصدار:</span>
+                <span class="info-value">1.0.0</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">قاعدة البيانات:</span>
+                <span class="info-value" id="dbStatus">جاري التحقق...</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">آخر تحديث:</span>
+                <span class="info-value" id="lastUpdate">—</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

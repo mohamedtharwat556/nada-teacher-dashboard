@@ -91,6 +91,104 @@ function confirmDel(msg,cb){
   document.getElementById('cdNo').onclick=closeModal;
 }
 
+// Function to clear all data
+async function clearAllData() {
+  try {
+    // Clear local data
+    window.APP_DATA = {
+      students: [],
+      homework: [],
+      exams: [],
+      attendance: [],
+      payments: [],
+      notes: [],
+      activities: []
+    };
+
+    // Clear backend data
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        students: [],
+        homework: [],
+        exams: [],
+        attendance: [],
+        payments: [],
+        notes: [],
+        activities: []
+      })
+    });
+
+    showToast('تم مسح جميع البيانات بنجاح', 'success');
+
+    // Reload current section
+    const currentSection = document.querySelector('.page-section:not(.hidden)');
+    if (currentSection) {
+      const sectionId = currentSection.id;
+      if (sectionId === 'studentsSection') renderStudents();
+      else if (sectionId === 'homeworkSection') renderHomework();
+      else if (sectionId === 'examsSection') renderExams();
+      else if (sectionId === 'attendanceSection') renderAttendance();
+      else if (sectionId === 'paymentsSection') renderPayments();
+      else if (sectionId === 'notesSection') renderNotes();
+    }
+
+  } catch (error) {
+    console.error('Error clearing data:', error);
+    showToast('حدث خطأ أثناء مسح البيانات', 'error');
+  }
+}
+
+// Function to show clear data confirmation
+function showClearDataConfirmation() {
+  confirmDel(
+    'هل أنت متأكد من مسح جميع البيانات؟<br><br>⚠️ هذا الإجراء سيحذف:<br>• جميع الطلاب<br>• جميع الواجبات<br>• جميع الامتحانات<br>• جميع سجلات الحضور<br>• جميع المدفوعات<br>• جميع الملاحظات<br><br>لا يمكن التراجع عن هذا الإجراء!',
+    clearAllData
+  );
+}
+
+// Function to check database status
+async function checkDatabaseStatus() {
+  try {
+    const res = await fetch('/api/health');
+    if (res.ok) {
+      const data = await res.json();
+      const dbStatusEl = document.getElementById('dbStatus');
+      if (dbStatusEl) {
+        if (data.supabase === 'connected') {
+          dbStatusEl.textContent = 'متصل ✓';
+          dbStatusEl.style.color = 'var(--clr-success)';
+        } else {
+          dbStatusEl.textContent = 'غير متصل ✗';
+          dbStatusEl.style.color = 'var(--clr-danger)';
+        }
+      }
+    }
+  } catch (error) {
+    const dbStatusEl = document.getElementById('dbStatus');
+    if (dbStatusEl) {
+      dbStatusEl.textContent = 'خطأ في الاتصال ✗';
+      dbStatusEl.style.color = 'var(--clr-danger)';
+    }
+  }
+}
+
+// Function to update last update time
+function updateLastUpdateTime() {
+  const lastUpdateEl = document.getElementById('lastUpdate');
+  if (lastUpdateEl) {
+    const now = new Date();
+    lastUpdateEl.textContent = now.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+}
+
 function seedDemoData(){
   if(load('students').length > 0) return;
   save('students',[
@@ -163,7 +261,7 @@ function seedDemoData(){
 
 
 // ROUTER
-const PAGES={home:{title:'الرئيسية',render:renderHome},students:{title:'الطلاب',render:renderStudents},homework:{title:'الواجبات',render:renderHomework},exams:{title:'الامتحانات',render:renderExams},attendance:{title:'الحضور والغياب',render:renderAttendance},payments:{title:'المصروفات',render:renderPayments},performance:{title:'مستوى الطلاب',render:renderPerformance},notes:{title:'الملاحظات',render:renderNotes},settings:{title:'الإعدادات',render:function(){}}};
+const PAGES={home:{title:'الرئيسية',render:renderHome},students:{title:'الطلاب',render:renderStudents},homework:{title:'الواجبات',render:renderHomework},exams:{title:'الامتحانات',render:renderExams},attendance:{title:'الحضور والغياب',render:renderAttendance},payments:{title:'المصروفات',render:renderPayments},performance:{title:'مستوى الطلاب',render:renderPerformance},notes:{title:'الملاحظات',render:renderNotes},settings:{title:'الإعدادات',render:function(){checkDatabaseStatus();updateLastUpdateTime();}}};
 function navigate(sec){
   document.querySelectorAll('.page-section').forEach(s=>s.classList.add('hidden'));
   document.querySelectorAll('.nav-link').forEach(a=>a.classList.toggle('active',a.dataset.section===sec));
