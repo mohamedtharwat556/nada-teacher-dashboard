@@ -14,14 +14,14 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [] };
 async function initBackend() {
   try {
-    const res = await fetch('http://localhost:3000/api/data');
+    const res = await fetch('/api/data');
     if (res.ok) window.APP_DATA = await res.json();
   } catch(e) { console.warn('Backend not reachable', e); }
 }
 async function syncBackend(key, data) {
   window.APP_DATA[key] = data;
   try {
-    await fetch('http://localhost:3000/api/data', {
+    await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: data })

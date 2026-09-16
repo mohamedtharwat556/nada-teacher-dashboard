@@ -73,7 +73,7 @@ let CACHED_STUDENTS = [];
 const getStudents = () => CACHED_STUDENTS;
 async function fetchStudents() {
   try {
-    const res = await fetch('http://localhost:3000/api/data');
+    const res = await fetch('/api/data');
     if (res.ok) {
       const data = await res.json();
       CACHED_STUDENTS = data.students || [];
