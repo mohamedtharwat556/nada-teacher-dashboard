@@ -2,13 +2,13 @@
   "name": "teacher-dashboard-backend",
   "version": "1.0.0",
   "description": "Node.js backend for Nada Teacher Dashboard with Supabase",
-  "main": "server.js",
+  "main": "server_improved.js",
   "scripts": {
     "start": "node server_improved.js",
     "dev": "node --watch server_improved.js",
     "start:legacy": "node server.js",
     "dev:legacy": "node --watch server.js",
-    "vercel-build": "echo hello"
+    "vercel-build": "npm install"
   },
   "dependencies": {
     "cors": "^2.8.5",
