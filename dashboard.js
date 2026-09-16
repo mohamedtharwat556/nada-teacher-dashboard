@@ -14,31 +14,34 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [] };
 async function initBackend() {
   try {
-    // Load data from improved API endpoints
-    const [studentsRes, homeworkRes, examsRes, attendanceRes, paymentsRes, notesRes, activitiesRes] = await Promise.all([
-      fetch('/api/students'),
-      fetch('/api/homework'),
-      fetch('/api/exams'),
-      fetch('/api/attendance'),
-      fetch('/api/payments'),
-      fetch('/api/notes'),
-      fetch('/api/activities')
-    ]);
-
+    // Load students from improved API
+    const studentsRes = await fetch('/api/students');
+    const students = studentsRes.ok ? await studentsRes.json() : [];
+    
+    // Load other data from legacy API
+    const res = await fetch('/api/data');
+    let otherData = {};
+    if (res.ok) {
+      const data = await res.json();
+      otherData = {
+        homework: data.homework || data.nada_homework || [],
+        exams: data.exams || data.nada_exams || [],
+        attendance: data.attendance || data.nada_attendance || [],
+        payments: data.payments || data.nada_payments || [],
+        notes: data.notes || data.nada_notes || [],
+        activities: data.activities || data.nada_activities || []
+      };
+    }
+    
     window.APP_DATA = {
-      students: studentsRes.ok ? await studentsRes.json() : [],
-      homework: homeworkRes.ok ? await homeworkRes.json() : [],
-      exams: examsRes.ok ? await examsRes.json() : [],
-      attendance: attendanceRes.ok ? await attendanceRes.json() : [],
-      payments: paymentsRes.ok ? await paymentsRes.json() : [],
-      notes: notesRes.ok ? await notesRes.json() : [],
-      activities: activitiesRes.ok ? await activitiesRes.json() : []
+      students: students,
+      ...otherData
     };
     
-    console.log('✅ Data loaded from improved API');
+    console.log('✅ Data loaded - students from improved API, others from legacy');
   } catch(e) { 
-    console.warn('Backend not reachable, trying legacy API', e);
-    // Fallback to legacy API
+    console.warn('Backend not reachable, trying legacy API only', e);
+    // Fallback to legacy API for everything
     try {
       const res = await fetch('/api/data');
       if (res.ok) {
@@ -61,120 +64,31 @@ async function initBackend() {
 async function syncBackend(key, data) {
   window.APP_DATA[key] = data;
   try {
-    // Use improved API endpoints for all data types
-    await syncImprovedBackend(key, data);
+    // Use legacy API for simplicity and reliability
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: data })
+    });
   } catch(e) { console.error('Failed to save', e); }
 }
 
 // Sync with the improved server API
 async function syncImprovedBackend(key, data) {
   try {
-    switch(key) {
-      case 'students':
-        // For students, we don't sync the whole array
-        // Individual operations are handled in the add/edit functions
-        break;
-      case 'homework':
-        // Sync each homework item individually
-        if (Array.isArray(data)) {
-          for (const item of data) {
-            if (item.id) {
-              await fetch(`/api/homework/${item.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            } else {
-              await fetch('/api/homework', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            }
-          }
-        }
-        break;
-      case 'exams':
-        // Sync each exam item individually
-        if (Array.isArray(data)) {
-          for (const item of data) {
-            if (item.id) {
-              await fetch(`/api/exams/${item.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            } else {
-              await fetch('/api/exams', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            }
-          }
-        }
-        break;
-      case 'attendance':
-        // Sync attendance records
-        if (Array.isArray(data)) {
-          await fetch('/api/attendance', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-        }
-        break;
-      case 'payments':
-        // Sync each payment item individually
-        if (Array.isArray(data)) {
-          for (const item of data) {
-            if (item.id) {
-              await fetch(`/api/payments/${item.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            } else {
-              await fetch('/api/payments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            }
-          }
-        }
-        break;
-      case 'notes':
-        // Sync each note item individually
-        if (Array.isArray(data)) {
-          for (const item of data) {
-            if (item.id) {
-              await fetch(`/api/notes/${item.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            } else {
-              await fetch('/api/notes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
-            }
-          }
-        }
-        break;
-      case 'activities':
-        // Sync activities
-        if (Array.isArray(data)) {
-          await fetch('/api/activities', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-        }
-        break;
+    // For now, we only sync students through individual operations
+    // Other data types will use the legacy API for simplicity
+    if (key === 'students') {
+      // Students are handled individually in add/edit/delete functions
+      return;
     }
+    
+    // For other data types, use legacy API
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: data })
+    });
   } catch(e) { console.error('Failed to sync with improved API', e); }
 }
 function load(key) { return window.APP_DATA[key] || []; }
