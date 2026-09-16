@@ -1,15 +1,23 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "server_improved.js",
-      "use": "@vercel/node"
+      "source": "/api/:path*",
+      "destination": "/server_improved.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/server_improved.js"
     }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/(.*)",
-      "dest": "/server_improved.js"
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
     }
   ]
 }
