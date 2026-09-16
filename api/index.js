@@ -9,11 +9,15 @@ if (supabaseUrl && supabaseKey) {
     try {
         supabase = createClient(supabaseUrl, supabaseKey);
         console.log('✅ Supabase client initialized');
+        console.log('📊 Supabase URL:', supabaseUrl);
     } catch (error) {
         console.error('❌ Failed to initialize Supabase client:', error.message);
+        console.error('❌ Error details:', error);
     }
 } else {
     console.warn('⚠️  Supabase credentials not found. API will fail.');
+    console.warn('⚠️  SUPABASE_URL:', supabaseUrl ? 'Set' : 'Not set');
+    console.warn('⚠️  SUPABASE_ANON_KEY:', supabaseKey ? 'Set' : 'Not set');
 }
 
 // Helper function to set CORS headers
@@ -28,7 +32,7 @@ function setCorsHeaders(res) {
 }
 
 // Main handler
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     setCorsHeaders(res);
 
     // Handle OPTIONS request for CORS
@@ -37,7 +41,19 @@ export default async function handler(req, res) {
         return;
     }
 
+    // Parse URL pathname
     const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+
+    // Parse request body for POST/PUT requests
+    if (req.method === 'POST' || req.method === 'PUT') {
+        try {
+            if (req.body && typeof req.body === 'string') {
+                req.body = JSON.parse(req.body);
+            }
+        } catch (e) {
+            console.error('Error parsing request body:', e.message);
+        }
+    }
 
     try {
         // Health check endpoint
@@ -565,9 +581,11 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error('❌ Error:', err.message);
-        res.status(500).json({ 
+        console.error('❌ Stack:', err.stack);
+        res.status(500).json({
             error: 'Internal server error',
-            message: err.message
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
         });
     }
 }
