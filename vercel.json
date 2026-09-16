@@ -1,15 +1,18 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "server_improved.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "server_improved.js"
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ]
 }
