@@ -37,9 +37,15 @@ app.use(express.json({ limit: '10mb' }));
 // Serve static files
 app.use(express.static(path.join(__dirname), {
     index: 'index.html',
-    setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache');
+        }
+        if (filePath.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+        if (filePath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
         }
     }
 }));
