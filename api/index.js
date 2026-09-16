@@ -81,12 +81,12 @@ module.exports = async function handler(req, res) {
                     .from('students')
                     .select('count', { count: 'exact', head: true });
 
-                // Try to list tables using information_schema
-                const { data: tablesData, error: tablesError } = await supabase
-                    .from('information_schema.tables')
-                    .select('table_name')
-                    .eq('table_schema', 'public')
-                    .order('table_name');
+                // Try to insert a test student
+                const { data: insertData, error: insertError } = await supabase
+                    .from('students')
+                    .insert([{ name: 'API Test Student', grade: 'الصف الرابع الابتدائي', center: 'الكاشف' }])
+                    .select()
+                    .single();
 
                 const result = {
                     students: {
@@ -95,8 +95,11 @@ module.exports = async function handler(req, res) {
                         error: studentsError ? studentsError.message : null,
                         fullError: studentsError
                     },
-                    tables: tablesData ? tablesData.map(t => t.table_name) : [],
-                    tablesError: tablesError ? tablesError.message : null
+                    insertTest: {
+                        success: !insertError,
+                        data: insertData,
+                        error: insertError ? insertError.message : null
+                    }
                 };
 
                 return res.json(result);
