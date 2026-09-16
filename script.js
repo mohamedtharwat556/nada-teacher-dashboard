@@ -156,12 +156,20 @@ let CACHED_STUDENTS = [];
 const getStudents = () => CACHED_STUDENTS;
 async function fetchStudents() {
   try {
-    const res = await fetch('/api/data');
+    // Try improved API first
+    const res = await fetch('/api/students');
     if (res.ok) {
-      const data = await res.json();
-      // Support both key names for compatibility
-      CACHED_STUDENTS = data.students || data.nada_students || [];
-      console.log('📖 Students loaded:', CACHED_STUDENTS.length);
+      CACHED_STUDENTS = await res.json();
+      console.log('📖 Students loaded from improved API:', CACHED_STUDENTS.length);
+    } else {
+      // Fallback to legacy API
+      const legacyRes = await fetch('/api/data');
+      if (legacyRes.ok) {
+        const data = await legacyRes.json();
+        // Support both key names for compatibility
+        CACHED_STUDENTS = data.students || data.nada_students || [];
+        console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
+      }
     }
   } catch(e) { console.warn('Backend not reachable', e); }
 }
@@ -251,13 +259,10 @@ async function searchStudents(name, grade) {
   return getStudents().filter(s => {
     const nameMatch    = q === '' || s.name.toLowerCase().includes(q);
     const gradeMatch   = grade === '' || s.grade === grade;
-    // Only return students that belong to the currently selected teacher.
-    // Fall back gracefully: if a student has no `teacher` field, include them
-    // and assume they belong to the current teacher (for backwards compatibility)
+    // Filter by teacher/center
     const teacherGrades = TEACHER_GRADES[selectedTeacher] || [];
-    const teacherMatch  = s.teacher === selectedTeacher
-                       || (!s.teacher && teacherGrades.includes(s.grade))
-                       || (!s.teacher); // Include students without teacher field
+    const teacherMatch  = s.center === selectedTeacher
+                       || teacherGrades.includes(s.grade);
     return nameMatch && gradeMatch && teacherMatch;
   });
 }

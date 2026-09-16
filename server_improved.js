@@ -228,11 +228,9 @@ app.post('/api/students', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
     try {
-        // Add teacher field if center is provided but teacher is not
+        // Remove teacher field if it doesn't exist in the schema
         const studentData = { ...req.body };
-        if (studentData.center && !studentData.teacher) {
-            studentData.teacher = studentData.center;
-        }
+        delete studentData.teacher;
         
         const { data, error } = await supabase
             .from('students')
@@ -253,9 +251,13 @@ app.put('/api/students/:id', async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
     try {
+        // Remove teacher field if it doesn't exist in the schema
+        const studentData = { ...req.body };
+        delete studentData.teacher;
+        
         const { data, error } = await supabase
             .from('students')
-            .update(req.body)
+            .update(studentData)
             .eq('id', req.params.id)
             .select()
             .single();
