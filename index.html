@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>أستاذة ندى — متابعة الطلاب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== NAVIGATION ===== -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-container">
+      <div class="nav-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        <span>أستاذة ندى</span>
+      </div>
+
+      <nav class="nav-links" id="navLinks">
+        <a href="#hero" class="nav-link active" data-section="hero">الرئيسية</a>
+        <a href="#search-section" class="nav-link" data-section="search">متابعة الطالب</a>
+        <a href="#about-teacher" class="nav-link" data-section="about">عن المدرسة</a>
+        <a href="#footer" class="nav-link" data-section="contact">تواصل معنا</a>
+        <a href="dashboard.html" class="nav-link" style="color: var(--clr-primary); font-weight: 700;">لوحة المعلم</a>
+      </nav>
+
+      <button class="hamburger" id="hamburger" aria-label="القائمة" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNavOverlay">
+    <nav class="mobile-nav-links">
+      <a href="#hero" class="mobile-nav-link" data-mobile-nav>الرئيسية</a>
+      <a href="#search-section" class="mobile-nav-link" data-mobile-nav>متابعة الطالب</a>
+      <a href="#about-teacher" class="mobile-nav-link" data-mobile-nav>عن المدرسة</a>
+      <a href="#footer" class="mobile-nav-link" data-mobile-nav>تواصل معنا</a>
+      <a href="dashboard.html" class="mobile-nav-link" style="color: var(--clr-primary); font-weight: 700;">لوحة المعلم</a>
+    </nav>
+  </div>
+
+  <main>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero" id="hero">
+      <div class="container hero-container">
+        <div class="hero-text">
+          <div class="hero-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            منصة متابعة تعليمية مخصصة لطلاب العلوم
+          </div>
+          <h1 class="hero-title">كل تفاصيل مستوى<br/><span class="highlight">ابنك في مكان واحد</span></h1>
+          <p class="hero-subtitle">تابع الواجبات، الامتحانات، الحضور، مصاريف الدروس وملاحظات المدرسة بسهولة.</p>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="hero-stat-num">+50</span>
+              <span class="hero-stat-label">طالب</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-num">7</span>
+              <span class="hero-stat-label">صفوف دراسية</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-num">4+</span>
+              <span class="hero-stat-label">سنوات خبرة</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Card -->
+        <div class="search-card" id="search-section">
+          <div class="search-card-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <h2>تابع مستوى ابنك بسهولة</h2>
+          </div>
+          <p class="search-card-sub">اكتب اسم الطالب واختر الصف الدراسي</p>
+
+          <div class="search-form">
+
+            <!-- اختيار المدرس -->
+            <div class="input-group">
+              <label class="input-label">المدرس</label>
+              <div class="teacher-selector" id="teacherSelector">
+                <button type="button" class="teacher-btn active" data-teacher="الكاشف">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                  الكاشف
+                </button>
+                <button type="button" class="teacher-btn" data-teacher="سيف الدين">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                  سيف الدين
+                </button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="studentName" class="input-label">اسم الطالب</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                <input
+                  type="text"
+                  id="studentName"
+                  class="form-input"
+                  placeholder="مثال: محمد أحمد"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="gradeFilter" class="input-label">الصف الدراسي <span class="optional-label">(اختياري)</span></label>
+              <div class="input-wrapper">
+                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <select id="gradeFilter" class="form-select">
+                  <option value="">— كل الصفوف  —</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn-search" id="searchBtn" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              ابحث عن الطالب
+            </button>
+          </div>
+
+          <p class="privacy-note">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            بيانات الطلاب مخصصة للمتابعة التعليمية فقط.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SEARCH RESULTS AREA ===== -->
+    <section class="results-section" id="resultsSection" style="display:none;">
+      <div class="container" id="resultsContainer"></div>
+    </section>
+
+    <!-- ===== STUDENT DASHBOARD ===== -->
+    <section class="dashboard-section" id="dashboardSection" style="display:none;">
+      <div class="container" id="dashboardContainer"></div>
+    </section>
+
+    <!-- ===== TEACHER BRANDING ===== -->
+    <section class="about-teacher" id="about-teacher">
+      <div class="container about-container">
+        <div class="about-content">
+          <div class="teacher-avatar">
+            <img src="p65.png" alt="أستاذة ندى" class="teacher-photo" />
+          </div>
+          <div class="teacher-info">
+            <div class="teacher-badge">مدرسة علوم معتمدة</div>
+            <h2 class="teacher-name">أستاذة ندى</h2>
+            <p class="teacher-subject">مدرسة العلوم</p>
+            <p class="teacher-experience">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              خبرة أكثر من 4 سنوات في تدريس مادة العلوم
+            </p>
+            <p class="teacher-desc">متابعة مستمرة لمستوى الطلاب، مع الاهتمام بالفهم الحقيقي للمادة، الالتزام بالواجبات، والحضور والتطور الأكاديمي.</p>
+            <div class="teacher-features">
+              <div class="teacher-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                متابعة أكاديمية دورية
+              </div>
+              <div class="teacher-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                تواصل مستمر مع أولياء الأمور
+              </div>
+              <div class="teacher-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                اهتمام بالفهم الحقيقي للمادة
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="footer">
+    <div class="container footer-container">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          أستاذة ندى للعلوم
+        </div>
+        <p class="footer-tagline">متابعة تعليمية مستمرة تساعد الطالب على التطور.</p>
+      </div>
+
+      <div class="footer-links-group">
+        <h4 class="footer-links-title">روابط سريعة</h4>
+        <ul class="footer-links">
+          <li><a href="#hero">الرئيسية</a></li>
+          <li><a href="#search-section">متابعة الطالب</a></li>
+          <li><a href="#about-teacher">عن أستاذة ندى</a></li>
+          <li><a href="#footer">تواصل معنا</a></li>
+          <li><a href="dashboard.html" style="color: var(--clr-primary); font-weight: bold;">دخول لوحة المعلم</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links-group">
+        <h4 class="footer-links-title">الصف وف  الدراسية</h4>
+        <ul class="footer-links">
+          <li><span>الصف الرابع الابتدائي</span></li>
+          <li><span>الصف الخامس الابتدائي</span></li>
+          <li><span>الصف السادس الابتدائي</span></li>
+          <li><span>الصف الأول الإعدادي</span></li>
+          <li><span>الصف الثاني الإعدادي</span></li>
+          <li><span>الصف الثالث الإعدادي</span></li>
+          <li><span>الصف الأول الثانوي</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 أستاذة ندى للعلوم — جميع الحقوق محفوظة</p>
+    </div>
+  </footer>
+
+  <!-- Notification Toast -->
+  <div class="notification" id="notification" role="alert" aria-live="polite">
+    <span class="notification-icon"></span>
+    <span class="notification-msg" id="notificationMsg"></span>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
