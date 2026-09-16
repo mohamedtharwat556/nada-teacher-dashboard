@@ -118,6 +118,7 @@ module.exports = async function handler(req, res) {
             }
 
             try {
+                console.log('Fetching students from Supabase...');
                 const { data, error } = await supabase
                     .from('students')
                     .select('*')
@@ -141,12 +142,18 @@ module.exports = async function handler(req, res) {
                             code: error.code
                         });
                     }
-                    throw error;
+                    return res.status(500).json({
+                        error: 'Supabase error',
+                        message: error.message,
+                        code: error.code,
+                        details: error
+                    });
                 }
+                console.log('Students fetched successfully:', data ? data.length : 0, 'students');
                 return res.json(data || []);
             } catch (err) {
                 console.error('Error fetching students:', err);
-                return res.status(500).json({ error: 'Failed to fetch students', message: err.message });
+                return res.status(500).json({ error: 'Failed to fetch students', message: err.message, stack: err.stack });
             }
         }
 
