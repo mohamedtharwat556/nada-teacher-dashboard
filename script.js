@@ -18,7 +18,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   const video = document.getElementById('videoBg');
   const fallback = document.getElementById('videoFallback');
-  
+
   if (video) {
     video.addEventListener('error', function() {
       console.log('Video failed to load, showing fallback');
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
         video.style.display = 'none';
       }
     });
-    
+
     // Also check if video loads after a timeout
     setTimeout(function() {
       if (video.readyState === 0) { // HAVE_NOTHING
@@ -39,7 +39,61 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }, 3000);
   }
+
+  // Counter Animation
+  initCounterAnimation();
+
+  // Particles Animation
+  initParticles();
 });
+
+/* =====================================================================
+   COUNTER ANIMATION
+   ===================================================================== */
+function initCounterAnimation() {
+  const counters = document.querySelectorAll('.counter');
+  
+  counters.forEach(counter => {
+    const target = parseInt(counter.getAttribute('data-target'), 10);
+    const duration = 2000; // 2 seconds
+    const increment = target / (duration / 16); // 60fps
+    let current = 0;
+
+    const updateCounter = () => {
+      current += increment;
+      if (current < target) {
+        counter.textContent = Math.ceil(current) + '+';
+        requestAnimationFrame(updateCounter);
+      } else {
+        counter.textContent = target + '+';
+      }
+    };
+
+    // Start animation after a delay
+    setTimeout(updateCounter, 500);
+  });
+}
+
+/* =====================================================================
+   PARTICLES ANIMATION
+   ===================================================================== */
+function initParticles() {
+  const container = document.getElementById('particles');
+  if (!container) return;
+
+  const particleCount = 20;
+
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDelay = Math.random() * 15 + 's';
+    particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+    particle.style.width = (2 + Math.random() * 4) + 'px';
+    particle.style.height = particle.style.width;
+    container.appendChild(particle);
+  }
+}
 
 /* =====================================================================
    TEACHER CONFIG

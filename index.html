@@ -15,11 +15,14 @@
   <video autoplay muted loop playsinline class="video-background" id="videoBg">
     <source src="background-video.mp4" type="video/mp4">
   </video>
-  
+
   <!-- Fallback for video -->
   <div class="video-fallback" id="videoFallback" style="display: none;">
     <img src="p65.png" alt="أستاذة ندى" class="fallback-image">
   </div>
+
+  <!-- Floating Particles -->
+  <div class="particles-container" id="particles"></div>
 
   <!-- ===== NAVIGATION ===== -->
   <header class="navbar" id="navbar">
@@ -60,25 +63,50 @@
     <section class="hero" id="hero">
       <div class="container hero-container">
         <div class="hero-text">
-          <div class="hero-badge">
+          <div class="hero-badge animate-fade-in">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             منصة متابعة تعليمية مخصصة لطلاب العلوم
           </div>
-          <h1 class="hero-title">كل تفاصيل مستوى<br/><span class="highlight">ابنك في مكان واحد</span></h1>
-          <p class="hero-subtitle">تابع الواجبات، الامتحانات، الحضور، مصاريف الدروس وملاحظات المدرسة بسهولة.</p>
-          <div class="hero-stats">
+          <h1 class="hero-title animate-slide-up">
+            <span class="title-line">كل تفاصيل مستوى</span>
+            <span class="highlight title-line">ابنك في مكان واحد</span>
+          </h1>
+          <p class="hero-subtitle animate-slide-up-delay">تابع الواجبات، الامتحانات، الحضور، مصاريف الدروس وملاحظات المدرسة بسهولة ومرونة.</p>
+          
+          <div class="hero-features animate-slide-up-delay-2">
+            <div class="hero-feature-item">
+              <div class="feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              </div>
+              <span>متابعة أكاديمية دقيقة</span>
+            </div>
+            <div class="hero-feature-item">
+              <div class="feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <span>أمان وخصوصية للبيانات</span>
+            </div>
+            <div class="hero-feature-item">
+              <div class="feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <span>تقارير فورية ومفصلة</span>
+            </div>
+          </div>
+
+          <div class="hero-stats animate-fade-in-delay">
             <div class="hero-stat">
-              <span class="hero-stat-num">+50</span>
+              <span class="hero-stat-num counter" data-target="50">0</span>
               <span class="hero-stat-label">طالب</span>
             </div>
             <div class="hero-stat-divider"></div>
             <div class="hero-stat">
-              <span class="hero-stat-num">7</span>
+              <span class="hero-stat-num counter" data-target="7">0</span>
               <span class="hero-stat-label">صفوف دراسية</span>
             </div>
             <div class="hero-stat-divider"></div>
             <div class="hero-stat">
-              <span class="hero-stat-num">4+</span>
+              <span class="hero-stat-num counter" data-target="4">0</span>
               <span class="hero-stat-label">سنوات خبرة</span>
             </div>
           </div>
