@@ -5,19 +5,15 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 let supabase = null;
-if (supabaseUrl && supabaseKey) {
-    try {
+try {
+    if (supabaseUrl && supabaseKey && supabaseUrl !== 'YOUR_SUPABASE_PROJECT_URL_HERE' && supabaseKey !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
         supabase = createClient(supabaseUrl, supabaseKey);
         console.log('✅ Supabase client initialized');
-        console.log('📊 Supabase URL:', supabaseUrl);
-    } catch (error) {
-        console.error('❌ Failed to initialize Supabase client:', error.message);
-        console.error('❌ Error details:', error);
+    } else {
+        console.warn('⚠️  Supabase credentials not properly configured');
     }
-} else {
-    console.warn('⚠️  Supabase credentials not found. API will fail.');
-    console.warn('⚠️  SUPABASE_URL:', supabaseUrl ? 'Set' : 'Not set');
-    console.warn('⚠️  SUPABASE_ANON_KEY:', supabaseKey ? 'Set' : 'Not set');
+} catch (error) {
+    console.error('❌ Failed to initialize Supabase client:', error.message);
 }
 
 // Helper function to set CORS headers
@@ -41,8 +37,14 @@ module.exports = async function handler(req, res) {
         return;
     }
 
-    // Parse URL pathname
-    const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+    // Parse URL pathname - handle both Vercel and local environments
+    let pathname;
+    try {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        pathname = url.pathname;
+    } catch (e) {
+        pathname = req.url || '/';
+    }
 
     // Parse request body for POST/PUT requests
     if (req.method === 'POST' || req.method === 'PUT') {
@@ -52,18 +54,18 @@ module.exports = async function handler(req, res) {
             }
         } catch (e) {
             console.error('Error parsing request body:', e.message);
+            req.body = {};
         }
     }
 
     try {
         // Health check endpoint
         if ((pathname === '/health' || pathname === '/api/health') && req.method === 'GET') {
-            res.status(200).json({ 
-                status: 'ok', 
+            return res.status(200).json({
+                status: 'ok',
                 supabase: supabase ? 'connected' : 'not configured',
                 timestamp: new Date().toISOString()
             });
-            return;
         }
 
         // GET all students from Supabase
@@ -72,14 +74,18 @@ module.exports = async function handler(req, res) {
                 return res.status(500).json({ error: 'Supabase not configured' });
             }
 
-            const { data, error } = await supabase
-                .from('students')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('students')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching students:', err);
+                return res.status(500).json({ error: 'Failed to fetch students', message: err.message });
+            }
         }
 
         // GET search students
@@ -135,18 +141,22 @@ module.exports = async function handler(req, res) {
                 return res.status(500).json({ error: 'Supabase not configured' });
             }
 
-            const studentData = req.body;
-            delete studentData.teacher;
-            
-            const { data, error } = await supabase
-                .from('students')
-                .insert([studentData])
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const studentData = req.body;
+                delete studentData.teacher;
+
+                const { data, error } = await supabase
+                    .from('students')
+                    .insert([studentData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error creating student:', err);
+                return res.status(500).json({ error: 'Failed to create student', message: err.message });
+            }
         }
 
         // PUT update student
@@ -155,20 +165,24 @@ module.exports = async function handler(req, res) {
                 return res.status(500).json({ error: 'Supabase not configured' });
             }
 
-            const id = pathname.split('/').pop();
-            const studentData = req.body;
-            delete studentData.teacher;
-            
-            const { data, error } = await supabase
-                .from('students')
-                .update(studentData)
-                .eq('id', id)
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const studentData = req.body;
+                delete studentData.teacher;
+
+                const { data, error } = await supabase
+                    .from('students')
+                    .update(studentData)
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error updating student:', err);
+                return res.status(500).json({ error: 'Failed to update student', message: err.message });
+            }
         }
 
         // DELETE student
@@ -177,52 +191,60 @@ module.exports = async function handler(req, res) {
                 return res.status(500).json({ error: 'Supabase not configured' });
             }
 
-            const id = pathname.split('/').pop();
-            const { error } = await supabase
-                .from('students')
-                .delete()
-                .eq('id', id);
-            
-            if (error) throw error;
-            res.json({ success: true });
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { error } = await supabase
+                    .from('students')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                return res.json({ success: true });
+            } catch (err) {
+                console.error('Error deleting student:', err);
+                return res.status(500).json({ error: 'Failed to delete student', message: err.message });
+            }
         }
 
         // GET all data from Supabase (legacy)
         if ((pathname === '/data' || pathname === '/api/data') && req.method === 'GET') {
             if (!supabase) {
-                return res.status(500).json({ 
+                return res.status(500).json({
                     error: 'Supabase not configured',
                     message: 'Please check environment variables for SUPABASE_URL and SUPABASE_ANON_KEY'
                 });
             }
 
-            console.log('📖 Fetching data from Supabase...');
-            
-            // Fetch data from all tables
-            const [studentsRes, homeworkRes, examsRes, attendanceRes, paymentsRes, notesRes, activitiesRes] = await Promise.all([
-                supabase.from('students').select('*'),
-                supabase.from('homework').select('*'),
-                supabase.from('exams').select('*'),
-                supabase.from('attendance').select('*'),
-                supabase.from('payments').select('*'),
-                supabase.from('notes').select('*'),
-                supabase.from('activities').select('*')
-            ]);
+            try {
+                console.log('📖 Fetching data from Supabase...');
 
-            const result = {
-                students: studentsRes.data || [],
-                homework: homeworkRes.data || [],
-                exams: examsRes.data || [],
-                attendance: attendanceRes.data || [],
-                payments: paymentsRes.data || [],
-                notes: notesRes.data || [],
-                activities: activitiesRes.data || []
-            };
-            
-            console.log('✅ Data fetched successfully');
-            res.status(200).json(result);
-            return;
+                // Fetch data from all tables
+                const [studentsRes, homeworkRes, examsRes, attendanceRes, paymentsRes, notesRes, activitiesRes] = await Promise.all([
+                    supabase.from('students').select('*'),
+                    supabase.from('homework').select('*'),
+                    supabase.from('exams').select('*'),
+                    supabase.from('attendance').select('*'),
+                    supabase.from('payments').select('*'),
+                    supabase.from('notes').select('*'),
+                    supabase.from('activities').select('*')
+                ]);
+
+                const result = {
+                    students: studentsRes.data || [],
+                    homework: homeworkRes.data || [],
+                    exams: examsRes.data || [],
+                    attendance: attendanceRes.data || [],
+                    payments: paymentsRes.data || [],
+                    notes: notesRes.data || [],
+                    activities: activitiesRes.data || []
+                };
+
+                console.log('✅ Data fetched successfully');
+                return res.status(200).json(result);
+            } catch (err) {
+                console.error('Error fetching data:', err);
+                return res.status(500).json({ error: 'Failed to fetch data', message: err.message });
+            }
         }
 
         // POST update specific keys to Supabase (legacy)
@@ -267,310 +289,390 @@ module.exports = async function handler(req, res) {
         if (pathname === '/api/homework' && req.method === 'GET') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('homework')
-                .select('*, students(name, grade)')
-                .order('date', { ascending: false });
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('homework')
+                    .select('*, students(name, grade)')
+                    .order('date', { ascending: false });
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching homework:', err);
+                return res.status(500).json({ error: 'Failed to fetch homework', message: err.message });
+            }
         }
 
         // POST homework
         if (pathname === '/api/homework' && req.method === 'POST') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('homework')
-                .insert([req.body])
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('homework')
+                    .insert([req.body])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error creating homework:', err);
+                return res.status(500).json({ error: 'Failed to create homework', message: err.message });
+            }
         }
 
         // PUT homework
         if (pathname.match(/^\/api\/homework\/[^\/]+$/) && req.method === 'PUT') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { data, error } = await supabase
-                .from('homework')
-                .update(req.body)
-                .eq('id', id)
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { data, error } = await supabase
+                    .from('homework')
+                    .update(req.body)
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error updating homework:', err);
+                return res.status(500).json({ error: 'Failed to update homework', message: err.message });
+            }
         }
 
         // DELETE homework
         if (pathname.match(/^\/api\/homework\/[^\/]+$/) && req.method === 'DELETE') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { error } = await supabase
-                .from('homework')
-                .delete()
-                .eq('id', id);
-            
-            if (error) throw error;
-            res.json({ success: true });
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { error } = await supabase
+                    .from('homework')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                return res.json({ success: true });
+            } catch (err) {
+                console.error('Error deleting homework:', err);
+                return res.status(500).json({ error: 'Failed to delete homework', message: err.message });
+            }
         }
 
         // GET exams
         if (pathname === '/api/exams' && req.method === 'GET') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('exams')
-                .select('*, students(name, grade)')
-                .order('date', { ascending: false });
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('exams')
+                    .select('*, students(name, grade)')
+                    .order('date', { ascending: false });
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching exams:', err);
+                return res.status(500).json({ error: 'Failed to fetch exams', message: err.message });
+            }
         }
 
         // POST exams
         if (pathname === '/api/exams' && req.method === 'POST') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('exams')
-                .insert([req.body])
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('exams')
+                    .insert([req.body])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error creating exam:', err);
+                return res.status(500).json({ error: 'Failed to create exam', message: err.message });
+            }
         }
 
         // PUT exams
         if (pathname.match(/^\/api\/exams\/[^\/]+$/) && req.method === 'PUT') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { data, error } = await supabase
-                .from('exams')
-                .update(req.body)
-                .eq('id', id)
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { data, error } = await supabase
+                    .from('exams')
+                    .update(req.body)
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error updating exam:', err);
+                return res.status(500).json({ error: 'Failed to update exam', message: err.message });
+            }
         }
 
         // DELETE exams
         if (pathname.match(/^\/api\/exams\/[^\/]+$/) && req.method === 'DELETE') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { error } = await supabase
-                .from('exams')
-                .delete()
-                .eq('id', id);
-            
-            if (error) throw error;
-            res.json({ success: true });
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { error } = await supabase
+                    .from('exams')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                return res.json({ success: true });
+            } catch (err) {
+                console.error('Error deleting exam:', err);
+                return res.status(500).json({ error: 'Failed to delete exam', message: err.message });
+            }
         }
 
         // GET attendance
         if (pathname === '/api/attendance' && req.method === 'GET') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { date } = req.query;
-            let query = supabase
-                .from('attendance')
-                .select('*, students(name, grade)')
-                .order('date', { ascending: false });
-            
-            if (date) {
-                query = query.eq('date', date);
+            try {
+                const { date } = req.query;
+                let query = supabase
+                    .from('attendance')
+                    .select('*, students(name, grade)')
+                    .order('date', { ascending: false });
+
+                if (date) {
+                    query = query.eq('date', date);
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching attendance:', err);
+                return res.status(500).json({ error: 'Failed to fetch attendance', message: err.message });
             }
-            
-            const { data, error } = await query;
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
         }
 
         // POST attendance
         if (pathname === '/api/attendance' && req.method === 'POST') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const records = Array.isArray(req.body) ? req.body : [req.body];
-            
-            const { data, error } = await supabase
-                .from('attendance')
-                .upsert(records, { onConflict: 'student_id,date' })
-                .select();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const records = Array.isArray(req.body) ? req.body : [req.body];
+
+                const { data, error } = await supabase
+                    .from('attendance')
+                    .upsert(records, { onConflict: 'student_id,date' })
+                    .select();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error saving attendance:', err);
+                return res.status(500).json({ error: 'Failed to save attendance', message: err.message });
+            }
         }
 
         // GET payments
         if (pathname === '/api/payments' && req.method === 'GET') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('payments')
-                .select('*, students(name, grade)')
-                .order('date', { ascending: false });
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('payments')
+                    .select('*, students(name, grade)')
+                    .order('date', { ascending: false });
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching payments:', err);
+                return res.status(500).json({ error: 'Failed to fetch payments', message: err.message });
+            }
         }
 
         // POST payments
         if (pathname === '/api/payments' && req.method === 'POST') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('payments')
-                .insert([req.body])
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('payments')
+                    .insert([req.body])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error creating payment:', err);
+                return res.status(500).json({ error: 'Failed to create payment', message: err.message });
+            }
         }
 
         // PUT payments
         if (pathname.match(/^\/api\/payments\/[^\/]+$/) && req.method === 'PUT') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { data, error } = await supabase
-                .from('payments')
-                .update(req.body)
-                .eq('id', id)
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { data, error } = await supabase
+                    .from('payments')
+                    .update(req.body)
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error updating payment:', err);
+                return res.status(500).json({ error: 'Failed to update payment', message: err.message });
+            }
         }
 
         // DELETE payments
         if (pathname.match(/^\/api\/payments\/[^\/]+$/) && req.method === 'DELETE') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { error } = await supabase
-                .from('payments')
-                .delete()
-                .eq('id', id);
-            
-            if (error) throw error;
-            res.json({ success: true });
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { error } = await supabase
+                    .from('payments')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                return res.json({ success: true });
+            } catch (err) {
+                console.error('Error deleting payment:', err);
+                return res.status(500).json({ error: 'Failed to delete payment', message: err.message });
+            }
         }
 
         // GET notes
         if (pathname === '/api/notes' && req.method === 'GET') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('notes')
-                .select('*, students(name, grade)')
-                .order('date', { ascending: false });
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('notes')
+                    .select('*, students(name, grade)')
+                    .order('date', { ascending: false });
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching notes:', err);
+                return res.status(500).json({ error: 'Failed to fetch notes', message: err.message });
+            }
         }
 
         // POST notes
         if (pathname === '/api/notes' && req.method === 'POST') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('notes')
-                .insert([req.body])
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('notes')
+                    .insert([req.body])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error creating note:', err);
+                return res.status(500).json({ error: 'Failed to create note', message: err.message });
+            }
         }
 
         // PUT notes
         if (pathname.match(/^\/api\/notes\/[^\/]+$/) && req.method === 'PUT') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { data, error } = await supabase
-                .from('notes')
-                .update(req.body)
-                .eq('id', id)
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { data, error } = await supabase
+                    .from('notes')
+                    .update(req.body)
+                    .eq('id', id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error updating note:', err);
+                return res.status(500).json({ error: 'Failed to update note', message: err.message });
+            }
         }
 
         // DELETE notes
         if (pathname.match(/^\/api\/notes\/[^\/]+$/) && req.method === 'DELETE') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const id = pathname.split('/').pop();
-            const { error } = await supabase
-                .from('notes')
-                .delete()
-                .eq('id', id);
-            
-            if (error) throw error;
-            res.json({ success: true });
-            return;
+            try {
+                const id = pathname.split('/').pop();
+                const { error } = await supabase
+                    .from('notes')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                return res.json({ success: true });
+            } catch (err) {
+                console.error('Error deleting note:', err);
+                return res.status(500).json({ error: 'Failed to delete note', message: err.message });
+            }
         }
 
         // GET activities
         if (pathname === '/api/activities' && req.method === 'GET') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('activities')
-                .select('*')
-                .order('timestamp', { ascending: false });
-            
-            if (error) throw error;
-            res.json(data || []);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('activities')
+                    .select('*')
+                    .order('timestamp', { ascending: false });
+
+                if (error) throw error;
+                return res.json(data || []);
+            } catch (err) {
+                console.error('Error fetching activities:', err);
+                return res.status(500).json({ error: 'Failed to fetch activities', message: err.message });
+            }
         }
 
         // POST activities
         if (pathname === '/api/activities' && req.method === 'POST') {
             if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-            const { data, error } = await supabase
-                .from('activities')
-                .insert([req.body])
-                .select()
-                .single();
-            
-            if (error) throw error;
-            res.json(data);
-            return;
+            try {
+                const { data, error } = await supabase
+                    .from('activities')
+                    .insert([req.body])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return res.json(data);
+            } catch (err) {
+                console.error('Error creating activity:', err);
+                return res.status(500).json({ error: 'Failed to create activity', message: err.message });
+            }
         }
 
         // 404 handler
@@ -581,11 +683,9 @@ module.exports = async function handler(req, res) {
 
     } catch (err) {
         console.error('❌ Error:', err.message);
-        console.error('❌ Stack:', err.stack);
-        res.status(500).json({
+        return res.status(500).json({
             error: 'Internal server error',
-            message: err.message,
-            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+            message: err.message
         });
     }
 }
