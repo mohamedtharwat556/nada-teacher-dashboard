@@ -95,9 +95,8 @@ npm install
 
 #### تنفيذ سكريبت قاعدة البيانات:
 1. اذهب إلى **SQL Editor** في لوحة تحكم Supabase
-2. انسخ محتوى `schema_improved.sql`
+2. انسخ محتوى `supabase_setup.sql`
 3. الصقه في المحرر واضغط **Run**
-4. (اختياري) نفذ `seed_data.sql` لإضافة بيانات تجريبية
 
 #### الحصول على بيانات الاتصال:
 1. اذهب إلى **Project Settings** > **API**
@@ -144,27 +143,30 @@ npm start
 
 ```
 nada-teacher-dashboard/
-├── public/                    # الملفات العامة
-│   ├── index.html            # الصفحة الرئيسية (ولي الأمر)
-│   ├── dashboard.html        # لوحة تحكم المعلم
-│   ├── css/
-│   │   ├── style.css        # تنسيقات الصفحة الرئيسية
-│   │   └── dashboard.css    # تنسيقات لوحة التحكم
-│   └── js/
-│       ├── script.js        # منطق الصفحة الرئيسية
-│       └── dashboard.js     # منطق لوحة التحكم
-├── server/
-│   ├── server_improved.js   # الخادم الرئيسي (محسّن)
-│   └── server.js            # الخادم القديم (للرجوع)
-├── database/
-│   ├── schema_improved.sql  # هيكل قاعدة البيانات المحسّن
-│   ├── seed_data.sql        # بيانات تجريبية
-│   └── schema.sql           # الهيكل القديم
+├── index.html                # الصفحة الرئيسية (ولي الأمر)
+├── dashboard.html            # لوحة تحكم المعلم
+├── style.css                 # تنسيقات الصفحة الرئيسية
+├── dashboard.css             # تنسيقات لوحة التحكم
+├── script.js                 # منطق الصفحة الرئيسية
+├── dashboard.js              # منطق لوحة التحكم
+├── server_improved.js        # الخادم الرئيسي (محسّن)
+├── server.js                 # الخادم القديم (للرجوع)
+├── supabase_setup.sql        # هيكل قاعدة البيانات
+├── api/
+│   ├── index.js             # API handler لـ Vercel
+│   └── stripe.js            # تكامل Stripe
+├── data/
+│   └── db.json              # بيانات محلية (قديم)
 ├── .env.example              # مثال لملف البيئة
 ├── .gitignore               # الملفات المستثناة من Git
 ├── package.json             # تبعيات المشروع
+├── vercel.json              # إعدادات Vercel
 ├── README.md                # هذا الملف
-└── MIGRATION_GUIDE.md        # دليل التبديل للهيكل الجديد
+├── DEPLOYMENT.md            # دليل النشر
+├── VERCEL_SETUP.md         # إعداد Vercel
+├── VERCEL_DEPLOY.md         # نشر Vercel
+├── STRIPE_INTEGRATION.md    # تكامل Stripe
+└── TEST_REPORT.md           # تقرير الاختبار
 ```
 
 ---
@@ -257,7 +259,7 @@ git push heroku main
 
 ### قبل النشر:
 - ✅ تأكد من إعداد `.env` بشكل صحيح
-- ✅ نفذ `schema_improved.sql` في Supabase
+- ✅ نفذ `supabase_setup.sql` في Supabase
 - ✅ اختبر المشروع محلياً
 - ✅ تأكد من أن جميع الملفات الضرورية موجودة
 
@@ -295,7 +297,7 @@ DEBUG=* npm start
 
 ### قاعدة البيانات لا تعمل:
 - تأكد من صحة بيانات Supabase في `.env`
-- تأكد من تنفيذ `schema_improved.sql`
+- تأكد من تنفيذ `supabase_setup.sql`
 - تحقق من اتصال الإنترنت
 - راجع logs في Supabase
 

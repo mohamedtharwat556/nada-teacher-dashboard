@@ -34,9 +34,8 @@ npm start
 
 ```sql
 -- في Supabase SQL Editor:
--- 1. نفذ schema_improved.sql
--- 2. (اختياري) نفذ seed_data.sql
--- 3. تأكد من أن الجداول موجودة
+-- 1. نفذ supabase_setup.sql
+-- 2. تأكد من أن الجداول موجودة
 ```
 
 ### 3. التحقق من الملفات:
@@ -45,9 +44,11 @@ npm start
 # تأكد من وجود هذه الملفات:
 ✅ package.json
 ✅ server_improved.js
+✅ supabase_setup.sql
 ✅ .env.example (وليس .env)
 ✅ .gitignore
 ✅ README.md
+✅ vercel.json
 ```
 
 ---
