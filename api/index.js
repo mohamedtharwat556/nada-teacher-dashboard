@@ -64,6 +64,7 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({
                 status: 'ok',
                 supabase: supabase ? 'connected' : 'not configured',
+                supabaseUrl: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'not set',
                 timestamp: new Date().toISOString()
             });
         }
