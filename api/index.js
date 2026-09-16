@@ -80,7 +80,26 @@ module.exports = async function handler(req, res) {
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase error fetching students:', error);
+                    // Check if table doesn't exist
+                    if (error.code === '42P01') {
+                        return res.status(500).json({
+                            error: 'Table not found',
+                            message: 'The students table does not exist in Supabase. Please run supabase_setup.sql',
+                            code: error.code
+                        });
+                    }
+                    // Check if RLS issue
+                    if (error.code === '42501') {
+                        return res.status(500).json({
+                            error: 'Permission denied',
+                            message: 'Row Level Security is enabled but no policies exist. Please check Supabase RLS settings',
+                            code: error.code
+                        });
+                    }
+                    throw error;
+                }
                 return res.json(data || []);
             } catch (err) {
                 console.error('Error fetching students:', err);
