@@ -1,7 +1,7 @@
 
 /* dashboard.js - Teacher Dashboard - استاذة ندى */
 
-const KEYS={students:'nada_students',homework:'nada_homework',exams:'nada_exams',attendance:'nada_attendance',payments:'nada_payments',notes:'nada_notes',activities:'nada_activities'};
+const KEYS={students:'students',homework:'homework',exams:'exams',attendance:'attendance',payments:'payments',notes:'notes',activities:'activities'};
 const GRADES=['الصف الرابع الابتدائي','الصف الخامس الابتدائي','الصف السادس الابتدائي','الصف الأول الإعدادي','الصف الثاني الإعدادي','الصف الثالث الإعدادي','الصف الأول الثانوي'];
 const CENTERS=['الكاشف','سيف الدين'];
 const NOTE_CATS=['أكاديمي','واجبات','حضور','سلوك','متابعة عامة','متميز'];
@@ -15,7 +15,19 @@ window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payme
 async function initBackend() {
   try {
     const res = await fetch('/api/data');
-    if (res.ok) window.APP_DATA = await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      // Support both old and new key names for compatibility
+      window.APP_DATA = {
+        students: data.students || data.nada_students || [],
+        homework: data.homework || data.nada_homework || [],
+        exams: data.exams || data.nada_exams || [],
+        attendance: data.attendance || data.nada_attendance || [],
+        payments: data.payments || data.nada_payments || [],
+        notes: data.notes || data.nada_notes || [],
+        activities: data.activities || data.nada_activities || []
+      };
+    }
   } catch(e) { console.warn('Backend not reachable', e); }
 }
 async function syncBackend(key, data) {
@@ -28,8 +40,31 @@ async function syncBackend(key, data) {
     });
   } catch(e) { console.error('Failed to save', e); }
 }
+
+// Also sync with the improved server API
+async function syncImprovedBackend(key, data) {
+  try {
+    const endpoint = `/api/${key}`;
+    const method = 'POST';
+    await fetch(endpoint, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('Failed to sync with improved API', e); }
+}
 function load(key) { return window.APP_DATA[key] || []; }
-function save(key, data) { syncBackend(key, data); }
+function save(key, data) {
+  syncBackend(key, data);
+  // Also try to sync with improved API for better compatibility
+  if (key === 'students') {
+    data.forEach(student => {
+      if (student.id && !student.id.startsWith('_')) {
+        syncImprovedBackend('students', student);
+      }
+    });
+  }
+}
 function logActivity(studentName, action) { const a = load('activities'); a.push({id:genId(), studentName, action, timestamp:now()}); save('activities', a); }
 function getStudent(id){return load('students').find(s=>s.id===id)||{};}
 function getStudentName(id){return getStudent(id).name||'—';}

@@ -159,7 +159,8 @@ async function fetchStudents() {
     const res = await fetch('/api/data');
     if (res.ok) {
       const data = await res.json();
-      CACHED_STUDENTS = data.students || [];
+      // Support both key names for compatibility
+      CACHED_STUDENTS = data.students || data.nada_students || [];
     }
   } catch(e) { console.warn('Backend not reachable', e); }
 }
