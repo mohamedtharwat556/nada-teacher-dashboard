@@ -81,12 +81,22 @@ module.exports = async function handler(req, res) {
                     .from('students')
                     .select('count', { count: 'exact', head: true });
 
+                // Try to list tables using information_schema
+                const { data: tablesData, error: tablesError } = await supabase
+                    .from('information_schema.tables')
+                    .select('table_name')
+                    .eq('table_schema', 'public')
+                    .order('table_name');
+
                 const result = {
                     students: {
                         exists: !studentsError,
                         count: studentsData ? studentsData : 0,
-                        error: studentsError ? studentsError.message : null
-                    }
+                        error: studentsError ? studentsError.message : null,
+                        fullError: studentsError
+                    },
+                    tables: tablesData ? tablesData.map(t => t.table_name) : [],
+                    tablesError: tablesError ? tablesError.message : null
                 };
 
                 return res.json(result);
