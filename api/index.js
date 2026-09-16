@@ -205,6 +205,8 @@ module.exports = async function handler(req, res) {
 
             try {
                 const studentData = req.body;
+                console.log('POST student data:', studentData);
+
                 delete studentData.teacher;
 
                 const { data, error } = await supabase
@@ -213,11 +215,14 @@ module.exports = async function handler(req, res) {
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase insert error:', error);
+                    throw error;
+                }
                 return res.json(data);
             } catch (err) {
                 console.error('Error creating student:', err);
-                return res.status(500).json({ error: 'Failed to create student', message: err.message });
+                return res.status(500).json({ error: 'Failed to create student', message: err.message, details: err.message });
             }
         }
 
