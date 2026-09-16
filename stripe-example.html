@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مثال الدفع بـ Stripe</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            direction: rtl;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #635bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>مثال الدفع بـ Stripe</h1>
+    
+    <div class="card">
+        <h2>إنشاء Payment Intent</h2>
+        <input type="number" id="amount" placeholder="المبلغ (مثال: 10)" value="10">
+        <button id="createPaymentIntent">إنشاء Payment Intent</button>
+        <div id="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>Checkout Session</h2>
+        <button id="createCheckoutSession">فتح صفحة الدفع</button>
+        <div id="checkoutResult"></div>
+    </div>
+
+    <script>
+        // Fetch Stripe publishable key
+        let stripe;
+        fetch('/api/stripe-config')
+            .then(response => response.json())
+            .then(data => {
+                stripe = Stripe(data.publishableKey);
+            })
+            .catch(error => {
+                console.error('Error fetching Stripe config:', error);
+            });
+
+        // Create Payment Intent
+        document.getElementById('createPaymentIntent').addEventListener('click', async () => {
+            const amount = document.getElementById('amount').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        currency: 'usd',
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="error">خطأ: ${data.error}</div>`;
+                    return;
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Payment Intent تم إنشاؤه بنجاح!<br>
+                        ID: ${data.paymentIntentId}<br>
+                        Client Secret: ${data.clientSecret.substring(0, 20)}...
+                    </div>
+                `;
+
+                // You can now use the clientSecret with Stripe Elements
+                // For example: stripe.confirmCardPayment(data.clientSecret, {...})
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">خطأ: ${error.message}</div>`;
+            }
+        });
+
+        // Create Checkout Session
+        document.getElementById('createCheckoutSession').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('checkoutResult');
+            
+            try {
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        success_url: window.location.href + '?success=true',
+                        cancel_url: window.location.href + '?canceled=true',
+                        line_items: [
+                            {
+                                price_data: {
+                                    currency: 'usd',
+                                    product_data: {
+                                        name: 'مثال منتج',
+                                    },
+                                    unit_amount: 1000, // $10.00 in cents
+                                },
+                                quantity: 1,
+                            },
+                        ],
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="error">خطأ: ${data.error}</div>`;
+                    return;
+                }
+
+                // Redirect to Stripe Checkout
+                window.location.href = data.url;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">خطأ: ${error.message}</div>`;
+            }
+        });
+
+        // Check for success/canceled URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success')) {
+            alert('الدفع تم بنجاح! 🎉');
+        }
+        if (urlParams.get('canceled')) {
+            alert('تم إلغاء الدفع.');
+        }
+    </script>
+</body>
+</html>

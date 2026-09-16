@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -57,6 +58,81 @@ app.get('/api/health', (req, res) => {
         supabase: supabase ? 'connected' : 'not configured',
         timestamp: new Date().toISOString()
     });
+});
+
+// Stripe config endpoint
+app.get('/api/stripe-config', (req, res) => {
+    res.json({
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+    });
+});
+
+// Create Payment Intent
+app.post('/api/create-payment-intent', async (req, res) => {
+    try {
+        const { amount, currency = 'usd', metadata = {} } = req.body;
+
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ 
+                error: 'Invalid amount',
+                message: 'Amount must be greater than 0'
+            });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100),
+            currency,
+            metadata,
+            automatic_payment_methods: {
+                enabled: true,
+            },
+        });
+
+        res.json({
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id,
+        });
+    } catch (error) {
+        console.error('Stripe error:', error);
+        res.status(500).json({ 
+            error: 'Payment intent creation failed',
+            message: error.message
+        });
+    }
+});
+
+// Create Checkout Session
+app.post('/api/create-checkout-session', async (req, res) => {
+    try {
+        const { success_url, cancel_url, line_items, metadata = {} } = req.body;
+
+        if (!success_url || !cancel_url || !line_items) {
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                message: 'success_url, cancel_url, and line_items are required'
+            });
+        }
+
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items,
+            mode: 'payment',
+            success_url,
+            cancel_url,
+            metadata,
+        });
+
+        res.json({
+            sessionId: session.id,
+            url: session.url,
+        });
+    } catch (error) {
+        console.error('Stripe error:', error);
+        res.status(500).json({ 
+            error: 'Checkout session creation failed',
+            message: error.message
+        });
+    }
 });
 
 // ============================================

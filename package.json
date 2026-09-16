@@ -7,13 +7,15 @@
     "start": "node server_improved.js",
     "dev": "node --watch server_improved.js",
     "start:legacy": "node server.js",
-    "dev:legacy": "node --watch server.js"
+    "dev:legacy": "node --watch server.js",
+    "vercel-build": "echo hello"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "@supabase/supabase-js": "^2.43.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "stripe": "^14.18.0"
   },
   "author": "",
   "license": "ISC"
