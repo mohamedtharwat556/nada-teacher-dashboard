@@ -259,9 +259,10 @@ async function searchStudents(name, grade) {
   return getStudents().filter(s => {
     const nameMatch    = q === '' || s.name.toLowerCase().includes(q);
     const gradeMatch   = grade === '' || s.grade === grade;
-    // Filter by teacher/center
+    // Filter by teacher/center (support both camelCase and snake_case)
     const teacherGrades = TEACHER_GRADES[selectedTeacher] || [];
-    const teacherMatch  = s.center === selectedTeacher
+    const center = s.center || s.center; // camelCase only since API converts
+    const teacherMatch  = center === selectedTeacher
                        || teacherGrades.includes(s.grade);
     return nameMatch && gradeMatch && teacherMatch;
   });
@@ -329,7 +330,7 @@ function renderSearchResults(results, query) {
 
   // Bind click + keyboard events
   container.querySelectorAll('.result-card').forEach(card => {
-    const id = parseInt(card.dataset.studentId, 10);
+    const id = card.dataset.studentId; // Don't parse as int - it's a UUID
     const select = () => selectStudent(id);
     card.addEventListener('click', select);
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') select(); });
@@ -346,7 +347,7 @@ function renderSearchResults(results, query) {
    ===================================================================== */
 
 function selectStudent(id) {
-  const student = getStudents().find(s => s.id === id);
+  const student = getStudents().find(s => String(s.id) === String(id));
   if (!student) return;
   renderStudentDashboard(student);
 }
@@ -363,9 +364,9 @@ function renderStudentDashboard(student) {
   container.innerHTML = `
     ${renderStudentHeader(student, initials)}
     ${renderOverviewCards(student)}
-    ${student.generalNotes ? `<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);">
+    ${(student.generalNotes || student.general_notes) ? `<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);">
       <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text);">ملاحظات المعلم</h3>
-      <p style="color:var(--clr-muted);line-height:1.6;">${student.generalNotes}</p>
+      <p style="color:var(--clr-muted);line-height:1.6;">${student.generalNotes || student.general_notes}</p>
     </div>` : ""}
     <div class="back-to-search">
       <button class="btn-back" id="backBtn">
@@ -408,11 +409,11 @@ function renderStudentHeader(student, initials) {
 
 /* ---- Overview Cards ---- */
 function renderOverviewCards(student) {
-  const payStatus = student.payStatus || "—";
+  const payStatus = student.payStatus || student.pay_status || "—";
   const payIcon = payStatus === "خالص" ? "green" : payStatus === "متبقي" ? "amber" : payStatus === "لم يتم الدفع" ? "red" : "gray";
-  const attPct = student.attRate || "—";
-  const hwStats = student.hwCompleted || "—";
-  const examAvg = student.examAvg || "—";
+  const attPct = student.attRate || student.att_rate || "—";
+  const hwStats = student.hwCompleted || student.hw_completed || "—";
+  const examAvg = student.examAvg || student.exam_avg || "—";
 
   return `
     <div class="overview-grid">
