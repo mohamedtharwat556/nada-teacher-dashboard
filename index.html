@@ -12,9 +12,14 @@
 <body>
 
   <!-- Video Background -->
-  <video autoplay muted loop playsinline class="video-background">
+  <video autoplay muted loop playsinline class="video-background" id="videoBg">
     <source src="background-video.mp4" type="video/mp4">
   </video>
+  
+  <!-- Fallback for video -->
+  <div class="video-fallback" id="videoFallback" style="display: none;">
+    <img src="p65.png" alt="أستاذة ندى" class="fallback-image">
+  </div>
 
   <!-- ===== NAVIGATION ===== -->
   <header class="navbar" id="navbar">

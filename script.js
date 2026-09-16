@@ -13,6 +13,35 @@
 'use strict';
 
 /* =====================================================================
+   VIDEO FALLBACK
+   ===================================================================== */
+document.addEventListener('DOMContentLoaded', function() {
+  const video = document.getElementById('videoBg');
+  const fallback = document.getElementById('videoFallback');
+  
+  if (video) {
+    video.addEventListener('error', function() {
+      console.log('Video failed to load, showing fallback');
+      if (fallback) {
+        fallback.style.display = 'block';
+        video.style.display = 'none';
+      }
+    });
+    
+    // Also check if video loads after a timeout
+    setTimeout(function() {
+      if (video.readyState === 0) { // HAVE_NOTHING
+        console.log('Video not loading, showing fallback');
+        if (fallback) {
+          fallback.style.display = 'block';
+          video.style.display = 'none';
+        }
+      }
+    }, 3000);
+  }
+});
+
+/* =====================================================================
    TEACHER CONFIG
    الكاشف  → رابع ابتدائي — ثالث إعدادي
    سيف الدين → أول إعدادي — أول ثانوي
