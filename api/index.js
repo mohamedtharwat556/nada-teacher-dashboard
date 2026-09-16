@@ -5,7 +5,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 let supabase = null;
-if (supabaseUrl && supabaseUrl !== 'YOUR_SUPABASE_PROJECT_URL_HERE' && supabaseKey && supabaseKey !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
+if (supabaseUrl && supabaseKey) {
     try {
         supabase = createClient(supabaseUrl, supabaseKey);
         console.log('✅ Supabase client initialized');
@@ -55,7 +55,129 @@ export default async function handler(req, res) {
             return;
         }
 
-        // GET all data from Supabase
+        // GET all students from Supabase
+        if (pathname === '/api/students' && req.method === 'GET') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            res.json(data || []);
+            return;
+        }
+
+        // GET search students
+        if (pathname === '/api/students/search' && req.method === 'GET') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            const { name, grade, center } = req.query;
+            
+            let query = supabase.from('students').select('*');
+            
+            if (name && name.trim() !== '') {
+                query = query.ilike('name', `%${name.trim()}%`);
+            }
+            
+            if (grade && grade.trim() !== '') {
+                query = query.eq('grade', grade);
+            }
+            
+            if (center && center.trim() !== '') {
+                query = query.eq('center', center);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            res.json(data || []);
+            return;
+        }
+
+        // GET single student
+        if (pathname.match(/^\/api\/students\/[^\/]+$/) && req.method === 'GET') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            const id = pathname.split('/').pop();
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error) throw error;
+            res.json(data);
+            return;
+        }
+
+        // POST create student
+        if (pathname === '/api/students' && req.method === 'POST') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            const studentData = req.body;
+            delete studentData.teacher;
+            
+            const { data, error } = await supabase
+                .from('students')
+                .insert([studentData])
+                .select()
+                .single();
+            
+            if (error) throw error;
+            res.json(data);
+            return;
+        }
+
+        // PUT update student
+        if (pathname.match(/^\/api\/students\/[^\/]+$/) && req.method === 'PUT') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            const id = pathname.split('/').pop();
+            const studentData = req.body;
+            delete studentData.teacher;
+            
+            const { data, error } = await supabase
+                .from('students')
+                .update(studentData)
+                .eq('id', id)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            res.json(data);
+            return;
+        }
+
+        // DELETE student
+        if (pathname.match(/^\/api\/students\/[^\/]+$/) && req.method === 'DELETE') {
+            if (!supabase) {
+                return res.status(500).json({ error: 'Supabase not configured' });
+            }
+
+            const id = pathname.split('/').pop();
+            const { error } = await supabase
+                .from('students')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            res.json({ success: true });
+            return;
+        }
+
+        // GET all data from Supabase (legacy)
         if ((pathname === '/data' || pathname === '/api/data') && req.method === 'GET') {
             if (!supabase) {
                 return res.status(500).json({ 
@@ -65,26 +187,34 @@ export default async function handler(req, res) {
             }
 
             console.log('📖 Fetching data from Supabase...');
-            const { data, error } = await supabase.from('store').select('*');
             
-            if (error) {
-                console.error('❌ Supabase query error:', error);
-                throw error;
-            }
-            
-            let result = { ...defaultData };
-            if (data && data.length > 0) {
-                data.forEach(row => {
-                    result[row.id] = row.value;
-                });
-            }
+            // Fetch data from all tables
+            const [studentsRes, homeworkRes, examsRes, attendanceRes, paymentsRes, notesRes, activitiesRes] = await Promise.all([
+                supabase.from('students').select('*'),
+                supabase.from('homework').select('*'),
+                supabase.from('exams').select('*'),
+                supabase.from('attendance').select('*'),
+                supabase.from('payments').select('*'),
+                supabase.from('notes').select('*'),
+                supabase.from('activities').select('*')
+            ]);
+
+            const result = {
+                students: studentsRes.data || [],
+                homework: homeworkRes.data || [],
+                exams: examsRes.data || [],
+                attendance: attendanceRes.data || [],
+                payments: paymentsRes.data || [],
+                notes: notesRes.data || [],
+                activities: activitiesRes.data || []
+            };
             
             console.log('✅ Data fetched successfully');
             res.status(200).json(result);
             return;
         }
 
-        // POST update specific keys to Supabase
+        // POST update specific keys to Supabase (legacy)
         if ((pathname === '/data' || pathname === '/api/data') && req.method === 'POST') {
             if (!supabase) {
                 return res.status(500).json({ 
@@ -104,6 +234,7 @@ export default async function handler(req, res) {
 
             console.log('💾 Saving data to Supabase:', Object.keys(updates));
             
+            // Save to store table for compatibility
             const upserts = Object.keys(updates).map(key => ({
                 id: key,
                 value: updates[key]

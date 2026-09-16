@@ -1,16 +1,14 @@
 {
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/health",
+      "source": "/api/:path*",
       "destination": "/api/index.js"
-    },
-    {
-      "source": "/api/data",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
     }
   ]
 }
