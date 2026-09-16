@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
     try {
         // Health check endpoint
-        if (pathname === '/api/health' && req.method === 'GET') {
+        if (pathname === '/health' && req.method === 'GET') {
             res.status(200).json({ 
                 status: 'ok', 
                 supabase: supabase ? 'connected' : 'not configured',
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         }
 
         // GET all data from Supabase
-        if (pathname === '/api/data' && req.method === 'GET') {
+        if (pathname === '/data' && req.method === 'GET') {
             if (!supabase) {
                 return res.status(500).json({ 
                     error: 'Supabase not configured',
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
         }
 
         // POST update specific keys to Supabase
-        if (pathname === '/api/data' && req.method === 'POST') {
+        if (pathname === '/data' && req.method === 'POST') {
             if (!supabase) {
                 return res.status(500).json({ 
                     error: 'Supabase not configured',
