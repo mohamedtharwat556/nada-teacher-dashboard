@@ -60,6 +60,11 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Serve index.html for root path
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Stripe config endpoint
 app.get('/api/stripe-config', (req, res) => {
     res.json({
