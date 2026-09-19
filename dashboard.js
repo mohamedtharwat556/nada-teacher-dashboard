@@ -703,7 +703,7 @@ function openEditStudentModal(id){
     
     try {
       // Update student basic info
-      const res = await fetch(`/api/students/${id}`, {
+      const res = await fetch(`/api/students?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -756,7 +756,7 @@ function openEditStudentModal(id){
 function deleteStudent(id){
   var students=load('students');var s=students.find(function(x){return x.id===id;});
   
-  fetch(`/api/students/${id}`, {
+  fetch(`/api/students?id=${id}`, {
     method: 'DELETE'
   }).then(res => {
     if (res.ok) {

@@ -48,16 +48,12 @@ module.exports = async function handler(req, res) {
         return;
     }
 
-    // Parse URL to check if it's a specific student ID request
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = url.pathname;
-    const pathParts = pathname.split('/').filter(Boolean);
-
     try {
-        // Handle specific student ID operations (GET, PUT, DELETE)
-        if (pathParts.length === 3 && pathParts[0] === 'api' && pathParts[1] === 'students') {
-            const studentId = pathParts[2];
+        // Handle operations with student ID via query parameter
+        const { id } = req.query;
 
+        if (id) {
+            // Handle specific student operations
             if (req.method === 'GET') {
                 if (!supabase) {
                     return res.status(500).json({ error: 'Supabase not configured' });
@@ -66,7 +62,7 @@ module.exports = async function handler(req, res) {
                 const { data, error } = await supabase
                     .from('students')
                     .select('*')
-                    .eq('id', studentId)
+                    .eq('id', id)
                     .single();
 
                 if (error) {
@@ -102,7 +98,7 @@ module.exports = async function handler(req, res) {
                 const { data, error } = await supabase
                     .from('students')
                     .update(dbData)
-                    .eq('id', studentId)
+                    .eq('id', id)
                     .select()
                     .single();
 
@@ -123,7 +119,7 @@ module.exports = async function handler(req, res) {
                 const { error } = await supabase
                     .from('students')
                     .delete()
-                    .eq('id', studentId);
+                    .eq('id', id);
 
                 if (error) {
                     console.error('Supabase delete error:', error);
