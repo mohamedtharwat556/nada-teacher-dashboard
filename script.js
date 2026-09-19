@@ -173,29 +173,7 @@ if (!window.APP_DATA) {
 }
 async function fetchStudents() {
   try {
-    // Try improved API first
-    const res = await fetch('/api/students');
-    if (res.ok) {
-      CACHED_STUDENTS = await res.json();
-      console.log('📖 Students loaded from improved API:', CACHED_STUDENTS.length);
-    } else {
-      // Fallback to legacy API
-      const legacyRes = await fetch('/api/data');
-      if (legacyRes.ok) {
-        const data = await legacyRes.json();
-        // Support both key names for compatibility
-        CACHED_STUDENTS = data.students || data.nada_students || [];
-        // Load monthly data as well
-        if (data.studentMonthlyData || data.nada_studentMonthlyData) {
-          window.APP_DATA = window.APP_DATA || {};
-          window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
-          console.log('📖 Monthly data loaded from legacy API:', window.APP_DATA.studentMonthlyData.length);
-        }
-        console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
-      }
-    }
-    
-    // Always try to load monthly data from dedicated API
+    // Always try to load monthly data from dedicated API first
     try {
       const monthlyRes = await fetch('/api/student-monthly-data');
       if (monthlyRes.ok) {
@@ -208,6 +186,28 @@ async function fetchStudents() {
       }
     } catch(e) {
       console.warn('Could not load monthly data from dedicated API', e);
+    }
+    
+    // Try improved API for students
+    const res = await fetch('/api/students');
+    if (res.ok) {
+      CACHED_STUDENTS = await res.json();
+      console.log('📖 Students loaded from improved API:', CACHED_STUDENTS.length);
+    } else {
+      // Fallback to legacy API
+      const legacyRes = await fetch('/api/data');
+      if (legacyRes.ok) {
+        const data = await legacyRes.json();
+        // Support both key names for compatibility
+        CACHED_STUDENTS = data.students || data.nada_students || [];
+        // Load monthly data as well (backup)
+        if (data.studentMonthlyData || data.nada_studentMonthlyData) {
+          window.APP_DATA = window.APP_DATA || {};
+          window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
+          console.log('📖 Monthly data loaded from legacy API (backup):', window.APP_DATA.studentMonthlyData.length);
+        }
+        console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
+      }
     }
     
   } catch(e) { console.warn('Backend not reachable', e); }

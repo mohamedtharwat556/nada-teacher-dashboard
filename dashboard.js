@@ -40,6 +40,18 @@ async function initBackend() {
       };
     }
     
+    // Also try to load monthly data from dedicated API for latest data
+    try {
+      const monthlyRes = await fetch('/api/student-monthly-data');
+      if (monthlyRes.ok) {
+        const monthlyData = await monthlyRes.json();
+        otherData.studentMonthlyData = monthlyData;
+        console.log('✅ Monthly data loaded from dedicated API:', monthlyData.length);
+      }
+    } catch(e) {
+      console.warn('Could not load monthly data from dedicated API:', e);
+    }
+    
     window.APP_DATA = {
       students: students,
       ...otherData
@@ -606,10 +618,11 @@ function openAddStudentModal(){
           if (supabaseRes.ok) {
             console.log('Monthly data saved to Supabase successfully');
           } else {
-            console.warn('Supabase save failed:', supabaseRes.status);
+            const errorText = await supabaseRes.text();
+            console.error('Supabase save failed:', supabaseRes.status, errorText);
           }
         } catch(e) {
-          console.warn('Could not save monthly data to Supabase:', e);
+          console.error('Could not save monthly data to Supabase:', e);
         }
         
         logActivity(data.name,'تمت إضافة طالب');showToast('تمت إضافة الطالب بنجاح - البيانات محفوظة في قاعدة البيانات');closeModal();renderStudents();renderAllMonthlyData();updateNotifications();
@@ -774,10 +787,11 @@ function openEditStudentModal(id){
           if (supabaseRes.ok) {
             console.log('Monthly data saved to Supabase successfully');
           } else {
-            console.warn('Supabase save failed:', supabaseRes.status);
+            const errorText = await supabaseRes.text();
+            console.error('Supabase save failed:', supabaseRes.status, errorText);
           }
         } catch(e) {
-          console.warn('Could not save monthly data to Supabase:', e);
+          console.error('Could not save monthly data to Supabase:', e);
         }
         
         logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب - البيانات محفوظة في قاعدة البيانات');closeModal();renderStudents();renderAllMonthlyData();
