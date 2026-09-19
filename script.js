@@ -195,19 +195,17 @@ async function fetchStudents() {
       }
     }
     
-    // Always try to load monthly data from API
+    // Always try to load monthly data from dedicated API
     try {
-      const dataRes = await fetch('/api/data');
-      if (dataRes.ok) {
-        const data = await dataRes.json();
-        if (data.studentMonthlyData || data.nada_studentMonthlyData) {
-          window.APP_DATA = window.APP_DATA || {};
-          window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
-          console.log('📖 Monthly data refreshed:', window.APP_DATA.studentMonthlyData.length);
-        }
+      const monthlyRes = await fetch('/api/student-monthly-data');
+      if (monthlyRes.ok) {
+        const monthlyData = await monthlyRes.json();
+        window.APP_DATA = window.APP_DATA || {};
+        window.APP_DATA.studentMonthlyData = monthlyData;
+        console.log('📖 Monthly data loaded from dedicated API:', monthlyData.length);
       }
     } catch(e) {
-      console.warn('Could not load monthly data separately', e);
+      console.warn('Could not load monthly data from dedicated API', e);
     }
     
   } catch(e) { console.warn('Backend not reachable', e); }
