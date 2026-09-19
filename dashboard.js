@@ -320,68 +320,6 @@ function updateLastUpdateTime() {
   }
 }
 
-function seedDemoData(){
-  if(load('students').length > 0) return;
-  const s1 = genId();
-  const s2 = genId();
-  const s3 = genId();
-  const s4 = genId();
-  const s5 = genId();
-  save('students',[
-    {id:s1,name:'محمد أحمد',grade:'الصف السادس الابتدائي',center:'الكاشف',status:'منتظم',attRate:90,hwCompleted:'4/5',examAvg:85,payStatus:'خالص',generalNotes:''},
-    {id:s2,name:'سارة محمود',grade:'الصف الأول الإعدادي',center:'سيف الدين',status:'يحتاج متابعة',attRate:70,hwCompleted:'2/5',examAvg:60,payStatus:'متبقي',generalNotes:''},
-    {id:s3,name:'يوسف علي',grade:'الصف الثاني الإعدادي',center:'الكاشف',status:'منتظم',attRate:95,hwCompleted:'5/5',examAvg:90,payStatus:'خالص',generalNotes:''},
-    {id:s4,name:'مريم حسن',grade:'الصف الثالث الإعدادي',center:'سيف الدين',status:'يحتاج متابعة',attRate:60,hwCompleted:'1/5',examAvg:50,payStatus:'لم يتم الدفع',generalNotes:''},
-    {id:s5,name:'علي صالح',grade:'الصف السادس الابتدائي',center:'الكاشف',status:'منتظم',attRate:100,hwCompleted:'5/5',examAvg:95,payStatus:'خالص',generalNotes:''}
-  ]);
-  save('homework',[
-    {id:genId(),studentId:s1,title:'واجب الخلية',date:'2026-09-10',maxScore:10,score:9,status:'مكتمل',note:'ممتاز'},
-    {id:genId(),studentId:s2,title:'واجب الهضم',date:'2026-09-10',maxScore:10,score:0,status:'لم يتم التسليم',note:''},
-    {id:genId(),studentId:s3,title:'واجب الضوء',date:'2026-09-11',maxScore:10,score:7,status:'مكتمل',note:'جيد'},
-    {id:genId(),studentId:s4,title:'واجب الكيمياء',date:'2026-09-11',maxScore:10,score:4,status:'متأخر',note:'تسليم متأخر'},
-    {id:genId(),studentId:s5,title:'واجب الخلية',date:'2026-09-10',maxScore:10,score:10,status:'مكتمل',note:''}
-  ]);
-  save('exams',[
-    {id:genId(),studentId:s1,title:'اختبار شهري أول',date:'2026-09-01',maxScore:20,score:18,note:'ممتاز'},
-    {id:genId(),studentId:s2,title:'اختبار شهري أول',date:'2026-09-01',maxScore:20,score:10,note:''},
-    {id:genId(),studentId:s3,title:'اختبار شهري أول',date:'2026-09-01',maxScore:20,score:16,note:'جيد جداً'},
-    {id:genId(),studentId:s4,title:'اختبار شهري أول',date:'2026-09-01',maxScore:20,score:9,note:'يحتاج تقوية'},
-    {id:genId(),studentId:s5,title:'اختبار شهري أول',date:'2026-09-01',maxScore:20,score:20,note:'متفوق'}
-  ]);
-  save('attendance',[
-    {id:genId(),studentId:s1,date:'2026-09-16',status:'حاضر'},
-    {id:genId(),studentId:s2,date:'2026-09-16',status:'غائب'},
-    {id:genId(),studentId:s3,date:'2026-09-16',status:'حاضر'},
-    {id:genId(),studentId:s4,date:'2026-09-16',status:'متأخر'},
-    {id:genId(),studentId:s5,date:'2026-09-16',status:'حاضر'}
-  ]);
-  save('payments',[
-    {id:genId(),studentId:s1,month:'سبتمبر 2026',total:300,paid:300,remaining:0,date:'2026-09-01',note:''},
-    {id:genId(),studentId:s2,month:'سبتمبر 2026',total:300,paid:150,remaining:150,date:'2026-09-05',note:''},
-    {id:genId(),studentId:s3,month:'سبتمبر 2026',total:300,paid:300,remaining:0,date:'2026-09-01',note:''},
-    {id:genId(),studentId:s4,month:'سبتمبر 2026',total:300,paid:0,remaining:300,date:'',note:'لم يدفع'},
-    {id:genId(),studentId:s5,month:'سبتمبر 2026',total:300,paid:300,remaining:0,date:'2026-09-01',note:''}
-  ]);
-  save('notes',[
-    {id:genId(),studentId:s1,category:'متميز',content:'طالب متفوق، مشارك في الحصة بشكل دائم.',date:'2026-09-12'},
-    {id:genId(),studentId:s2,category:'متابعة عامة',content:'تحتاج متابعة مستمرة في الواجبات.',date:'2026-09-12'},
-    {id:genId(),studentId:s4,category:'أكاديمي',content:'مستوى الاختبارات ضعيف، يُنصح بالمراجعة.',date:'2026-09-13'}
-  ]);
-  save('activities',[
-    {id:genId(),studentName:'محمد أحمد',action:'تم تسجيل نتيجة امتحان',timestamp:'2026-09-14T09:00:00.000Z'},
-    {id:genId(),studentName:'سارة محمود',action:'تم تسجيل غياب',timestamp:'2026-09-15T08:30:00.000Z'},
-    {id:genId(),studentName:'مريم حسن',action:'تمت إضافة ملاحظة',timestamp:'2026-09-15T10:00:00.000Z'}
-  ]);
-  save('monthlyEvaluations',[]);
-  save('studentMonthlyData',[
-    {id:genId(),studentId:s1,monthIndex:9,year:2026,attendanceRate:90,homeworkCompleted:'4/5',examAvg:85,paymentStatus:'خالص',status:'منتظم',generalNotes:''},
-    {id:genId(),studentId:s2,monthIndex:9,year:2026,attendanceRate:70,homeworkCompleted:'2/5',examAvg:60,paymentStatus:'متبقي',status:'يحتاج متابعة',generalNotes:''},
-    {id:genId(),studentId:s3,monthIndex:9,year:2026,attendanceRate:95,homeworkCompleted:'5/5',examAvg:90,paymentStatus:'خالص',status:'منتظم',generalNotes:''},
-    {id:genId(),studentId:s4,monthIndex:9,year:2026,attendanceRate:60,homeworkCompleted:'1/5',examAvg:50,paymentStatus:'لم يتم الدفع',status:'يحتاج متابعة',generalNotes:''},
-    {id:genId(),studentId:s5,monthIndex:9,year:2026,attendanceRate:100,homeworkCompleted:'5/5',examAvg:95,paymentStatus:'خالص',status:'منتظم',generalNotes:''}
-  ]);
-}
-
 
 // ROUTER
 const PAGES={home:{title:'الرئيسية',render:renderHome},students:{title:'الطلاب',render:renderStudents},homework:{title:'الواجبات',render:renderHomework},exams:{title:'الامتحانات',render:renderExams},attendance:{title:'الحضور والغياب',render:renderAttendance},payments:{title:'المصروفات',render:renderPayments},performance:{title:'مستوى الطلاب',render:renderPerformance},notes:{title:'الملاحظات',render:renderNotes},settings:{title:'الإعدادات',render:function(){checkDatabaseStatus();updateLastUpdateTime();}}};
@@ -1289,7 +1227,6 @@ document.getElementById('modalOverlay').addEventListener('click',function(e){if(
 // INIT
 window.addEventListener('DOMContentLoaded', async function(){
   await initBackend();
-  seedDemoData();
   handleHash();
   updateNotifications();
 });
