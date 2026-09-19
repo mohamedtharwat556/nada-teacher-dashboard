@@ -307,7 +307,7 @@ async function searchStudents(name, grade, month) {
    RENDER — SEARCH RESULTS
    ===================================================================== */
 
-function renderSearchResults(results, query) {
+function renderSearchResults(results, query, month) {
   const section   = document.getElementById('resultsSection');
   const container = document.getElementById('resultsContainer');
 
@@ -335,9 +335,10 @@ function renderSearchResults(results, query) {
   const cards = results.map(s => {
     const initials = getInitials(s.name);
     const teacherLabel = s.teacher || selectedTeacher;
-    const currentMonth = s.currentMonth !== undefined ? MONTHS[s.currentMonth] : '';
-    const currentYear = s.currentYear || '';
-    const monthDisplay = currentMonth && currentYear ? `${currentMonth} ${currentYear}` : (currentMonth ? currentMonth : '');
+    // Show the selected month from search, not the student's current month
+    const selectedMonthIndex = parseInt(month) || new Date().getMonth();
+    const selectedYear = new Date().getFullYear();
+    const monthDisplay = MONTHS[selectedMonthIndex] + ' ' + selectedYear;
     
     return `
       <div class="result-card reveal" data-student-id="${s.id}" role="button" tabindex="0" aria-label="عرض ملف ${s.name}">
@@ -346,10 +347,10 @@ function renderSearchResults(results, query) {
           <div>
             <div class="result-name">${s.name}</div>
             <div class="result-grade">${s.grade}</div>
-            ${monthDisplay ? `<div class="result-month" style="font-size:0.8rem;color:var(--text-light);margin-top:0.2rem;">
+            <div class="result-month" style="font-size:0.8rem;color:var(--text-light);margin-top:0.2rem;">
               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               ${monthDisplay}
-            </div>` : ''}
+            </div>
             <div class="result-teacher-tag">
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
               ${teacherLabel}
@@ -885,7 +886,7 @@ function initSearch() {
     // Simulate realistic async delay
     setTimeout(async () => {
       const results = await searchStudents(name, grade, month);
-      renderSearchResults(results, name);
+      renderSearchResults(results, name, month);
     }, 650);
   }
 
