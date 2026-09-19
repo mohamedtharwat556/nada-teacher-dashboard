@@ -189,10 +189,27 @@ async function fetchStudents() {
         if (data.studentMonthlyData || data.nada_studentMonthlyData) {
           window.APP_DATA = window.APP_DATA || {};
           window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
+          console.log('📖 Monthly data loaded:', window.APP_DATA.studentMonthlyData.length);
         }
         console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
       }
     }
+    
+    // Always try to load monthly data from API
+    try {
+      const dataRes = await fetch('/api/data');
+      if (dataRes.ok) {
+        const data = await dataRes.json();
+        if (data.studentMonthlyData || data.nada_studentMonthlyData) {
+          window.APP_DATA = window.APP_DATA || {};
+          window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
+          console.log('📖 Monthly data refreshed:', window.APP_DATA.studentMonthlyData.length);
+        }
+      }
+    } catch(e) {
+      console.warn('Could not load monthly data separately', e);
+    }
+    
   } catch(e) { console.warn('Backend not reachable', e); }
 }
 document.addEventListener('DOMContentLoaded', function() {
@@ -402,6 +419,8 @@ function renderStudentDashboard(student) {
     ? window.APP_DATA.studentMonthlyData.filter(m => m.studentId === student.id)
     : [];
 
+  console.log('Monthly data for student:', student.name, monthlyData);
+
   // Sort monthly data by year and month (newest first)
   monthlyData.sort((a, b) => {
     if (b.year !== a.year) return b.year - a.year;
@@ -478,10 +497,10 @@ function renderStudentDashboard(student) {
     
     ${monthlyData.length > 0 ? `
       <div style="margin-top:2rem;">
-        <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--clr-text);">السجل الشهري</h3>
+        <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--clr-text);">السجل الشهري (${monthlyData.length} شهر)</h3>
         ${monthlyCards}
       </div>
-    ` : '<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);text-align:center;"><p style="color:var(--clr-muted);">لا توجد بيانات شهرية مسجلة لهذا الطالب بعد</p></div>'}
+    ` : '<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);text-align:center;"><p style="color:var(--clr-muted);">لا توجد بيانات شهرية مسجلة لهذا الطالب بعد</p><button id="refreshDataBtn" style="margin-top:1rem;padding:0.5rem 1rem;background:var(--clr-accent);color:white;border:none;border-radius:4px;cursor:pointer;">تحديث البيانات</button></div>'}
     
     <div class="back-to-search">
       <button class="btn-back" id="backBtn">
@@ -492,7 +511,27 @@ function renderStudentDashboard(student) {
 
   section.style.display = "block";
   document.getElementById("backBtn").addEventListener("click", backToSearch);
+  
+  // Add refresh button functionality
+  const refreshBtn = document.getElementById("refreshDataBtn");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", async () => {
+      refreshBtn.textContent = "جاري التحديث...";
+      refreshBtn.disabled = true;
+      await fetchStudents();
+      const updatedStudent = getStudents().find(s => s.id === student.id);
+      if (updatedStudent) {
+        renderStudentDashboard(updatedStudent);
+      }
+    });
+  }
+  
   section.scrollIntoView({ behavior: "smooth", block: "start" });
+  
+  // Debug: log the student data
+  console.log('Student data:', student);
+  console.log('All monthly data:', window.APP_DATA?.studentMonthlyData);
+  console.log('Filtered monthly data:', monthlyData);
 }
 
 /* ---- Student Header ---- */
