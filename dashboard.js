@@ -597,7 +597,7 @@ function openAddStudentModal(){
         // Create initial monthly data for the new student
         var allMonthlyData=load('studentMonthlyData');
         var initialMonthData={
-          id:genId(),
+          id:genId(), // Now generates proper UUID using crypto.randomUUID()
           studentId:newStudent.id,
           monthIndex:parseInt(data.currentMonth)||new Date().getMonth(),
           year:parseInt(data.currentYear)||new Date().getFullYear(),
