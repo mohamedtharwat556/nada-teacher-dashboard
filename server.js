@@ -581,6 +581,68 @@ app.post('/api/data', async (req, res) => {
     }
 });
 
+// DELETE all students from Supabase
+app.delete('/api/students/clear', async (req, res) => {
+    if (!supabase) {
+        console.error('❌ Supabase not configured');
+        return res.status(500).json({ 
+            error: 'Supabase not configured',
+            message: 'Please check your .env file for SUPABASE_URL and SUPABASE_ANON_KEY'
+        });
+    }
+
+    try {
+        console.log('🗑️ Clearing all students from Supabase...');
+        const { error } = await supabase.from('students').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (error) {
+            console.error('❌ Error clearing students from Supabase:', error);
+            throw error;
+        }
+        
+        console.log('✅ All students cleared from Supabase');
+        res.json({ success: true, message: 'All students cleared successfully' });
+    } catch (err) {
+        console.error('❌ Error clearing students from Supabase:', err.message);
+        res.status(500).json({ 
+            error: 'Database delete error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+});
+
+// DELETE all monthly data from Supabase
+app.delete('/api/student-monthly-data/clear', async (req, res) => {
+    if (!supabase) {
+        console.error('❌ Supabase not configured');
+        return res.status(500).json({ 
+            error: 'Supabase not configured',
+            message: 'Please check your .env file for SUPABASE_URL and SUPABASE_ANON_KEY'
+        });
+    }
+
+    try {
+        console.log('🗑️ Clearing all monthly data from Supabase...');
+        const { error } = await supabase.from('student_monthly_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (error) {
+            console.error('❌ Error clearing monthly data from Supabase:', error);
+            throw error;
+        }
+        
+        console.log('✅ All monthly data cleared from Supabase');
+        res.json({ success: true, message: 'All monthly data cleared successfully' });
+    } catch (err) {
+        console.error('❌ Error clearing monthly data from Supabase:', err.message);
+        res.status(500).json({ 
+            error: 'Database delete error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+});
+
 // Serve static files after API routes to avoid conflicts
 app.use(express.static(path.join(__dirname))); // Serve static files from current directory
 

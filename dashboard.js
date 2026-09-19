@@ -209,7 +209,7 @@ async function clearAllData() {
       studentMonthlyData: []
     };
 
-    // Clear backend data
+    // Clear backend data (legacy API)
     await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -225,6 +225,23 @@ async function clearAllData() {
         studentMonthlyData: []
       })
     });
+
+    // Clear data from Supabase
+    try {
+      // Clear students from Supabase
+      await fetch('/api/students/clear', { method: 'DELETE' });
+      console.log('✅ Cleared students from Supabase');
+    } catch(e) {
+      console.warn('Could not clear students from Supabase:', e);
+    }
+
+    try {
+      // Clear monthly data from Supabase
+      await fetch('/api/student-monthly-data/clear', { method: 'DELETE' });
+      console.log('✅ Cleared monthly data from Supabase');
+    } catch(e) {
+      console.warn('Could not clear monthly data from Supabase:', e);
+    }
 
     showToast('تم مسح جميع البيانات بنجاح', 'success');
 
