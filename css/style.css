@@ -2005,6 +2005,132 @@ input, select, textarea { font-family: inherit; }
   .result-card { flex-wrap: wrap; }
 }
 
+/* iPhone specific adjustments */
+@media (max-width: 430px) {
+  html { font-size: 14px; }
+  .hero-title { font-size: 1.5rem; }
+  .hero-subtitle { font-size: 0.9rem; }
+  .search-card { padding: 20px 16px; }
+  .result-card { padding: 14px 16px; }
+  .result-avatar { width: 40px; height: 40px; }
+  .student-header { padding: 20px 16px; }
+  .overview-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+  .overview-card { padding: 0.8rem; }
+  .overview-value { font-size: 0.9rem; }
+  .overview-label { font-size: 0.75rem; }
+}
+
+@media (max-width: 390px) {
+  html { font-size: 13px; }
+  .hero { padding: 80px 0 48px; }
+  .hero-title { font-size: 1.4rem; }
+  .hero-subtitle { font-size: 0.85rem; }
+  .search-card { padding: 18px 14px; }
+  .input-group { margin-bottom: 0.8rem; }
+  .form-input, .form-select { padding: 0.6rem; font-size: 0.9rem; }
+  .btn-search { padding: 0.7rem 1rem; font-size: 0.9rem; }
+  .result-card { padding: 12px 14px; }
+  .result-avatar { width: 36px; height: 36px; }
+  .result-name { font-size: 0.95rem; }
+  .result-grade { font-size: 0.8rem; }
+  .student-header { padding: 18px 14px; }
+  .student-header-name { font-size: 1.1rem; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .overview-card { padding: 0.7rem; }
+  .overview-value { font-size: 0.85rem; }
+  .overview-label { font-size: 0.7rem; }
+}
+
+@media (max-width: 375px) {
+  html { font-size: 12.5px; }
+  .hero-title { font-size: 1.3rem; }
+  .hero-subtitle { font-size: 0.8rem; }
+  .search-card { padding: 16px 12px; }
+  .teacher-selector { flex-direction: column; }
+  .teacher-btn { width: 100%; padding: 0.6rem; font-size: 0.85rem; }
+  .form-input, .form-select { padding: 0.5rem; font-size: 0.85rem; }
+  .btn-search { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
+  .result-card { padding: 10px 12px; }
+  .result-avatar { width: 34px; height: 34px; }
+  .result-name { font-size: 0.9rem; }
+  .result-grade { font-size: 0.75rem; }
+  .badge { font-size: 0.7rem; padding: 0.15rem 0.35rem; }
+  .student-header { padding: 16px 12px; }
+  .student-header-name { font-size: 1rem; }
+  .student-header-grade { font-size: 0.85rem; }
+  .dash-section { padding: 16px 12px; }
+}
+
+@media (max-width: 360px) {
+  html { font-size: 12px; }
+  .hero { padding: 72px 0 40px; }
+  .hero-title { font-size: 1.2rem; }
+  .hero-subtitle { font-size: 0.75rem; }
+  .search-card { padding: 14px 10px; }
+  .input-label { font-size: 0.8rem; }
+  .form-input, .form-select { padding: 0.45rem; font-size: 0.8rem; }
+  .btn-search { padding: 0.5rem 0.8rem; font-size: 0.8rem; }
+  .result-card { padding: 8px 10px; }
+  .result-avatar { width: 32px; height: 32px; }
+  .result-name { font-size: 0.85rem; }
+  .result-grade { font-size: 0.7rem; }
+  .badge { font-size: 0.65rem; padding: 0.12rem 0.3rem; }
+  .student-header { padding: 14px 10px; }
+  .student-header-name { font-size: 0.95rem; }
+  .student-header-grade { font-size: 0.8rem; }
+  .overview-card { padding: 0.6rem; }
+  .overview-value { font-size: 0.8rem; }
+  .overview-label { font-size: 0.65rem; }
+}
+
+/* Extra small phones */
+@media (max-width: 320px) {
+  html { font-size: 11px; }
+  .hero { padding: 64px 0 36px; }
+  .hero-title { font-size: 1.1rem; }
+  .hero-subtitle { font-size: 0.7rem; }
+  .search-card { padding: 12px 8px; }
+  .input-group { margin-bottom: 0.6rem; }
+  .form-input, .form-select { padding: 0.4rem; font-size: 0.75rem; }
+  .btn-search { padding: 0.45rem 0.7rem; font-size: 0.75rem; }
+  .result-card { padding: 6px 8px; }
+  .result-avatar { width: 30px; height: 30px; }
+  .result-name { font-size: 0.8rem; }
+  .result-grade { font-size: 0.65rem; }
+  .badge { font-size: 0.6rem; padding: 0.1rem 0.25rem; }
+  .student-header { padding: 12px 8px; }
+  .student-header-name { font-size: 0.9rem; }
+  .student-header-grade { font-size: 0.75rem; }
+  .dash-section { padding: 12px 8px; }
+}
+
+/* Landscape mode for mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero { padding: 40px 0 24px; }
+  .hero-title { font-size: 1.2rem; }
+  .hero-subtitle { font-size: 0.85rem; }
+  .search-card { padding: 16px 20px; }
+  .science-highlights { flex-direction: row; }
+  .science-highlight { padding: 10px; }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  .btn-search { min-height: 44px; min-width: 44px; }
+  .result-card { min-height: 48px; }
+  .teacher-btn { min-height: 44px; }
+  .form-input, .form-select { min-height: 44px; }
+  .nav-link { min-height: 44px; }
+}
+
+/* Safe area support for iPhone X and newer */
+@supports (padding: max(0px)) {
+  .hero { padding-top: max(96px, env(safe-area-inset-top) + 96px); }
+  .search-card { margin-left: env(safe-area-inset-left); margin-right: env(safe-area-inset-right); }
+  .student-header { padding-left: max(20px, env(safe-area-inset-left) + 20px); padding-right: max(20px, env(safe-area-inset-right) + 20px); }
+  .dash-section { padding-left: max(16px, env(safe-area-inset-left) + 16px); padding-right: max(16px, env(safe-area-inset-right) + 16px); }
+}
+
 /* Large screens */
 @media (min-width: 1200px) {
   .overview-grid { grid-template-columns: repeat(5, 1fr); }

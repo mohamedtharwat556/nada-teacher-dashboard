@@ -463,6 +463,14 @@ body{background:var(--clr-bg);color:var(--clr-text);display:flex;min-height:100v
   .hamburger-btn{margin-right:auto}
   .header-actions{gap:.3rem}
   .toast{font-size:.85rem;padding:.6rem 1rem}
+  .sidebar-nav a{padding:.8rem 1rem;font-size:.9rem}
+  .sidebar-header{padding:1rem .8rem}
+  .form-group{margin-bottom:.6rem}
+  .form-input,.form-select{padding:.5rem;font-size:.85rem}
+  .btn{padding:.4rem .8rem;font-size:.85rem}
+  .table-toolbar{gap:.4rem}
+  .actions-cell{flex-direction:column;gap:.2rem}
+  .act-btn{width:100%;text-align:center}
 }
 /* iPhone specific adjustments */
 @media(max-width:390px){
@@ -472,6 +480,14 @@ body{background:var(--clr-bg);color:var(--clr-text);display:flex;min-height:100v
   .modal-box{margin:.3rem}
   .modal-header h3{font-size:1.1rem}
   .form-input,.form-select{font-size:.85rem}
+  .sidebar{width:85%;max-width:280px}
+  .stat-card{padding:.6rem}
+  .stat-num{font-size:1.2rem}
+  .stat-lbl{font-size:.7rem}
+  .overview-grid{gap:.6rem}
+  .ov-card{padding:.8rem}
+  .ov-num{font-size:1.3rem}
+  .ov-lbl{font-size:.75rem}
 }
 @media(max-width:375px){
   .data-table{min-width:400px}
@@ -480,4 +496,81 @@ body{background:var(--clr-bg);color:var(--clr-text);display:flex;min-height:100v
   .table-card{padding:.4rem}
   .data-table th,.data-table td{padding:.4rem .2rem;font-size:.75rem}
   .badge{font-size:.65rem;padding:.15rem .35rem}
+  .sidebar{width:90%;max-width:260px}
+  .section-header h2{font-size:1.1rem}
+  .modal-header h3{font-size:1rem}
+  .modal-body{padding:.8rem}
+  .form-group{margin-bottom:.5rem}
+  .btn{padding:.35rem .7rem;font-size:.8rem}
+  .toast{font-size:.8rem;padding:.5rem .8rem}
+}
+/* Extra small phones */
+@media(max-width:360px){
+  .data-table{min-width:380px}
+  .data-table th,.data-table td{padding:.35rem .15rem;font-size:.7rem}
+  .sidebar{width:95%;max-width:240px}
+  .section-header h2{font-size:1rem}
+  .stat-num{font-size:1.1rem}
+  .stat-lbl{font-size:.65rem}
+  .badge{font-size:.6rem;padding:.12rem .3rem}
+  .act-btn{padding:.25rem .5rem;font-size:.7rem}
+  .modal-box{margin:.2rem}
+  .modal-header h3{font-size:.95rem}
+  .form-input,.form-select{font-size:.8rem;padding:.4rem}
+  .form-label{font-size:.8rem}
+}
+/* iPhone SE and similar small screens */
+@media(max-width:320px){
+  .data-table{min-width:350px}
+  .main-content{padding:.3rem}
+  .header{padding:.6rem .3rem}
+  .header-avatar{width:28px;height:28px;font-size:.9rem}
+  .section-header h2{font-size:.95rem}
+  .stats-grid{grid-template-columns:1fr;gap:.4rem}
+  .table-card{padding:.3rem}
+  .data-table th,.data-table td{padding:.3rem .1rem;font-size:.65rem}
+  .badge{font-size:.55rem;padding:.1rem .25rem}
+  .act-btn{padding:.2rem .4rem;font-size:.65rem}
+  .sidebar{width:100%;max-width:220px}
+  .sidebar-nav a{padding:.6rem .8rem;font-size:.85rem}
+  .form-input,.form-select{font-size:.75rem;padding:.35rem}
+  .form-label{font-size:.75rem}
+  .btn{padding:.3rem .6rem;font-size:.75rem}
+}
+/* Landscape mode for mobile */
+@media(max-height:500px) and (orientation:landscape){
+  .sidebar{max-height:100vh;overflow-y:auto}
+  .sidebar-header{padding:.8rem .6rem}
+  .sidebar-nav a{padding:.5rem .8rem}
+  .modal-box{max-height:90vh;overflow-y:auto}
+  .modal-body{max-height:60vh;overflow-y:auto}
+}
+/* Large tablets in portrait */
+@media(min-width:768px) and (max-width:1024px) and (orientation:portrait){
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .overview-grid{grid-template-columns:repeat(3,1fr)}
+  .table-card{padding:1rem}
+  .data-table th,.data-table td{padding:.8rem .6rem}
+}
+/* Touch-friendly improvements for all mobile */
+@media(hover:none) and (pointer:coarse){
+  .btn{min-height:44px;min-width:44px}
+  .act-btn{min-height:40px;min-width:40px}
+  .nav-link{min-height:44px}
+  .sidebar-nav a{min-height:44px}
+  .input-wrapper input,.input-wrapper select{min-height:44px}
+  .modal-footer button{min-height:44px}
+}
+/* High DPI displays optimization */
+@media(-webkit-min-device-pixel-ratio:2), (min-resolution:192dpi){
+  .sidebar-avatar{image-rendering:-webkit-optimize-contrast}
+  .header-avatar{image-rendering:-webkit-optimize-contrast}
+  .teacher-photo{image-rendering:-webkit-optimize-contrast}
+}
+/* Safe area support for iPhone X and newer */
+@supports(padding:max(0px)){
+  .main-content{padding:env(safe-area-inset-right) .5rem .5rem env(safe-area-inset-left)}
+  .header{padding-right:env(safe-area-inset-right);padding-left:env(safe-area-inset-left)}
+  .sidebar{padding-top:env(safe-area-inset-top)}
+  .modal-box{margin:env(safe-area-inset-top) .5rem .5rem env(safe-area-inset-right)}
 }
