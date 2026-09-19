@@ -1,7 +1,7 @@
 
 /* dashboard.js - Teacher Dashboard - استاذة ندى */
 
-const KEYS={students:'students',homework:'homework',exams:'exams',attendance:'attendance',payments:'payments',notes:'notes',activities:'activities',monthlyEvaluations:'monthlyEvaluations'};
+const KEYS={students:'students',homework:'homework',exams:'exams',attendance:'attendance',payments:'payments',notes:'notes',activities:'activities',monthlyEvaluations:'monthlyEvaluations',studentMonthlyData:'studentMonthlyData'};
 const GRADES=['الصف الرابع الابتدائي','الصف الخامس الابتدائي','الصف السادس الابتدائي','الصف الأول الإعدادي','الصف الثاني الإعدادي','الصف الثالث الإعدادي','الصف الأول الثانوي'];
 const CENTERS=['الكاشف','سيف الدين'];
 const NOTE_CATS=['أكاديمي','واجبات','حضور','سلوك','متابعة عامة','متميز'];
@@ -16,7 +16,7 @@ function getMonthStart(year, monthIndex){return new Date(year, monthIndex, 1).to
 function getMonthEnd(year, monthIndex){return new Date(year, monthIndex + 1, 0).toISOString().split('T')[0];}
 function getMonthFromDate(dateStr){const d=new Date(dateStr);return MONTHS[d.getMonth()];}
 function getYearFromDate(dateStr){return new Date(dateStr).getFullYear();}
-window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [], monthlyEvaluations: [] };
+window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [], monthlyEvaluations: [], studentMonthlyData: [] };
 async function initBackend() {
   try {
     // Load students from improved API
@@ -35,7 +35,8 @@ async function initBackend() {
         payments: data.payments || data.nada_payments || [],
         notes: data.notes || data.nada_notes || [],
         activities: data.activities || data.nada_activities || [],
-        monthlyEvaluations: data.monthlyEvaluations || data.nada_monthlyEvaluations || []
+        monthlyEvaluations: data.monthlyEvaluations || data.nada_monthlyEvaluations || [],
+        studentMonthlyData: data.studentMonthlyData || data.nada_studentMonthlyData || []
       };
     }
     
@@ -60,7 +61,8 @@ async function initBackend() {
           payments: data.payments || data.nada_payments || [],
           notes: data.notes || data.nada_notes || [],
           activities: data.activities || data.nada_activities || [],
-          monthlyEvaluations: data.monthlyEvaluations || data.nada_monthlyEvaluations || []
+          monthlyEvaluations: data.monthlyEvaluations || data.nada_monthlyEvaluations || [],
+          studentMonthlyData: data.studentMonthlyData || data.nada_studentMonthlyData || []
         };
       }
     } catch(legacyError) {
@@ -184,7 +186,8 @@ async function clearAllData() {
       payments: [],
       notes: [],
       activities: [],
-      monthlyEvaluations: []
+      monthlyEvaluations: [],
+      studentMonthlyData: []
     };
 
     // Clear backend data
@@ -199,7 +202,8 @@ async function clearAllData() {
         payments: [],
         notes: [],
         activities: [],
-        monthlyEvaluations: []
+        monthlyEvaluations: [],
+        studentMonthlyData: []
       })
     });
 
@@ -341,6 +345,13 @@ function seedDemoData(){
     {id:'act3',studentName:'مريم حسن',action:'تمت إضافة ملاحظة',timestamp:'2026-09-15T10:00:00.000Z'}
   ]);
   save('monthlyEvaluations',[]);
+  save('studentMonthlyData',[
+    {id:'md1',studentId:'s1',monthIndex:9,year:2026,attendanceRate:90,homeworkCompleted:'4/5',examAvg:85,paymentStatus:'خالص',status:'منتظم',generalNotes:''},
+    {id:'md2',studentId:'s2',monthIndex:9,year:2026,attendanceRate:70,homeworkCompleted:'2/5',examAvg:60,paymentStatus:'متبقي',status:'يحتاج متابعة',generalNotes:''},
+    {id:'md3',studentId:'s3',monthIndex:9,year:2026,attendanceRate:95,homeworkCompleted:'5/5',examAvg:90,paymentStatus:'خالص',status:'منتظم',generalNotes:''},
+    {id:'md4',studentId:'s4',monthIndex:9,year:2026,attendanceRate:60,homeworkCompleted:'1/5',examAvg:50,paymentStatus:'لم يتم الدفع',status:'يحتاج متابعة',generalNotes:''},
+    {id:'md5',studentId:'s5',monthIndex:9,year:2026,attendanceRate:100,homeworkCompleted:'5/5',examAvg:95,paymentStatus:'خالص',status:'منتظم',generalNotes:''}
+  ]);
 }
 
 
@@ -431,37 +442,56 @@ function renderStudentRows(){
   var monthIndex=document.getElementById('stuMonth')?document.getElementById('stuMonth').value:'';
   var year=document.getElementById('stuYear')?document.getElementById('stuYear').value:'2026';
   var all=load('students').filter(function(s){return(!q||s.name.toLowerCase().includes(q))&&(!g||s.grade===g)&&(!c||s.center===c)&&(!st||s.status===st);});
+  var monthlyData=load('studentMonthlyData');
+  
   if(!all.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات طلاب.</td></tr>';return;}
   tbody.innerHTML=all.map(function(s){
-    var att=s.attRate||calcAttendanceRate(s.id);var exam=s.examAvg||calcExamAvg(s.id);
-    var cls=s.status==='منتظم'?'badge-green':'badge-yellow';
-    var payCls=s.payStatus==='خالص'?'badge-green':s.payStatus==='متبقي'?'badge-yellow':'badge-red';
-    var currentMonth=s.currentMonth!==undefined?MONTHS[s.currentMonth]:'—';
-    var currentYear=s.currentYear||'—';
+    // Get monthly data for selected month
+    var selectedMonthData=monthlyData.find(function(m){return m.studentId===s.id&&m.monthIndex===parseInt(monthIndex)&&m.year===parseInt(year)});
+    
+    // Use monthly data if available, otherwise fall back to student data
+    var att=selectedMonthData?selectedMonthData.attendanceRate:(s.attRate||calcAttendanceRate(s.id));
+    var exam=selectedMonthData?selectedMonthData.examAvg:(s.examAvg||calcExamAvg(s.id));
+    var hw=selectedMonthData?selectedMonthData.homeworkCompleted:(s.hwCompleted||'—');
+    var status=selectedMonthData?selectedMonthData.status:(s.status||'منتظم');
+    var payStatus=selectedMonthData?selectedMonthData.paymentStatus:(s.payStatus||'—');
+    
+    var cls=status==='منتظم'?'badge-green':'badge-yellow';
+    var payCls=payStatus==='خالص'?'badge-green':payStatus==='متبقي'?'badge-yellow':'badge-red';
+    var currentMonth=monthIndex!==''?MONTHS[parseInt(monthIndex)]:(s.currentMonth!==undefined?MONTHS[s.currentMonth]:'—');
+    var currentYear=year!==''?year:(s.currentYear||'—');
     var monthDisplay=currentMonth!=='—'?currentMonth+' '+currentYear:'—';
-    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td><span class="badge badge-blue">'+esc(s.center||'—')+'</span></td><td>'+monthDisplay+'</td><td>'+att+'%</td><td>'+(exam==='—'?'—':exam+'%')+'</td><td><span class="badge '+payCls+'">'+esc(s.payStatus||'—')+'</span></td><td><span class="badge '+cls+'">'+esc(s.status)+'</span></td>'
+    
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td><span class="badge badge-blue">'+esc(s.center||'—')+'</span></td><td>'+monthDisplay+'</td><td>'+att+'%</td><td>'+(exam==='—'?'—':exam+'%')+'</td><td><span class="badge '+payCls+'">'+esc(payStatus)+'</span></td><td><span class="badge '+cls+'">'+esc(status)+'</span></td>'
     +'<td><div class="actions-cell"><button class="act-btn act-btn-view" data-id="'+s.id+'">عرض</button><button class="act-btn act-btn-edit" data-id="'+s.id+'">تعديل</button><button class="act-btn act-btn-delete" data-id="'+s.id+'">حذف</button></div></td></tr>';
   }).join('');
   tbody.querySelectorAll('.act-btn-view').forEach(function(b){b.onclick=function(){openStudentProfile(b.dataset.id);};});
   tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditStudentModal(b.dataset.id);};});
   tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذا الطالب؟',function(){deleteStudent(b.dataset.id);});};});
 }
-function studentFormHtml(s){
+function studentFormHtml(s, currentMonthData){
   var currentMonth=new Date().getMonth();
   var currentYear=new Date().getFullYear();
+  var monthData=currentMonthData||{};
+  
   return '<div class="form-group"><label class="form-label">اسم الطالب *</label><input class="form-input" name="name" value="'+esc(s.name||'')+'"/></div>'
   +'<div class="form-group"><label class="form-label">الصف الدراسي *</label><select class="form-select" name="grade"><option value="">اختر الصف</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'"'+(s.grade===g?' selected':'')+'>'+g+'</option>';}).join('')+'</select></div>'
   +'<div class="form-group"><label class="form-label">المدرس / السنتر *</label><select class="form-select" name="center"><option value="">اختر السنتر</option>'+CENTERS.map(function(c){return '<option value="'+esc(c)+'"'+(s.center===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">'
-  +'<div class="form-group"><label class="form-label">الشهر الحالي</label><select class="form-select" name="currentMonth"><option value="">اختر الشهر</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+((s.currentMonth!==undefined&&s.currentMonth===i)?' selected':(i===currentMonth?' selected':''))+'>'+m+'</option>';}).join('')+'</select></div>'
-  +'<div class="form-group"><label class="form-label">السنة</label><select class="form-select" name="currentYear"><option value="2025">2025</option><option value="2026"'+((s.currentYear!==undefined&&s.currentYear===2026)||currentYear===2026?' selected':'')+'>2026</option><option value="2027">2027</option></select></div>'
-  +'<div class="form-group"><label class="form-label">نسبة الحضور (%)</label><input class="form-input" type="number" name="attRate" value="'+esc(s.attRate||'')+'" placeholder="مثال: 90"/></div>'
-  +'<div class="form-group"><label class="form-label">متوسط الامتحانات (%)</label><input class="form-input" type="number" name="examAvg" value="'+esc(s.examAvg||'')+'" placeholder="مثال: 85"/></div>'
-  +'<div class="form-group"><label class="form-label">الواجبات المكتملة</label><input class="form-input" type="text" name="hwCompleted" value="'+esc(s.hwCompleted||'')+'" placeholder="مثال: 4/5 أو 80%"/></div>'
-  +'<div class="form-group"><label class="form-label">حالة المصروفات</label><select class="form-select" name="payStatus"><option value="خالص"'+(s.payStatus==='خالص'?' selected':'')+'>خالص</option><option value="متبقي"'+(s.payStatus==='متبقي'?' selected':'')+'>متبقي</option><option value="لم يتم الدفع"'+(s.payStatus==='لم يتم الدفع'?' selected':'')+'>لم يتم الدفع</option></select></div>'
+  +'<div class="form-group"><label class="form-label">الشهر الحالي</label><select class="form-select" name="currentMonth" id="monthSelect"><option value="">اختر الشهر</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+((s.currentMonth!==undefined&&s.currentMonth===i)?' selected':(i===currentMonth?' selected':''))+'>'+m+'</option>';}).join('')+'</select></div>'
+  +'<div class="form-group"><label class="form-label">السنة</label><select class="form-select" name="currentYear" id="yearSelect"><option value="2025">2025</option><option value="2026"'+((s.currentYear!==undefined&&s.currentYear===2026)||currentYear===2026?' selected':'')+'>2026</option><option value="2027">2027</option></select></div>'
+  +'<div class="form-group"><label class="form-label">نسبة الحضور (%)</label><input class="form-input" type="number" name="attendanceRate" value="'+esc(monthData.attendanceRate||s.attRate||'')+'" placeholder="مثال: 90"/></div>'
+  +'<div class="form-group"><label class="form-label">متوسط الامتحانات (%)</label><input class="form-input" type="number" name="examAvg" value="'+esc(monthData.examAvg||s.examAvg||'')+'" placeholder="مثال: 85"/></div>'
+  +'<div class="form-group"><label class="form-label">الواجبات المكتملة</label><input class="form-input" type="text" name="homeworkCompleted" value="'+esc(monthData.homeworkCompleted||s.hwCompleted||'')+'" placeholder="مثال: 4/5 أو 80%"/></div>'
+  +'<div class="form-group"><label class="form-label">حالة المصروفات</label><select class="form-select" name="paymentStatus"><option value="خالص"'+((monthData.paymentStatus||s.payStatus)==='خالص'?' selected':'')+'>خالص</option><option value="متبقي"'+((monthData.paymentStatus||s.payStatus)==='متبقي'?' selected':'')+'>متبقي</option><option value="لم يتم الدفع"'+((monthData.paymentStatus||s.payStatus)==='لم يتم الدفع'?' selected':'')+'>لم يتم الدفع</option></select></div>'
   +'</div>'
-  +'<div class="form-group"><label class="form-label">الحالة</label><select class="form-select" name="status"><option value="منتظم"'+((s.status||'منتظم')==='منتظم'?' selected':'')+'>منتظم</option><option value="يحتاج متابعة"'+(s.status==='يحتاج متابعة'?' selected':'')+'>يحتاج متابعة</option></select></div>'
-  +'<div class="form-group"><label class="form-label">ملاحظات عامة</label><textarea class="form-textarea" name="generalNotes">'+esc(s.generalNotes||'')+'</textarea></div>';
+  +'<div class="form-group"><label class="form-label">الحالة</label><select class="form-select" name="status"><option value="منتظم"'+((monthData.status||s.status||'منتظم')==='منتظم'?' selected':'')+'>منتظم</option><option value="يحتاج متابعة"'+((monthData.status||s.status)==='يحتاج متابعة'?' selected':'')+'>يحتاج متابعة</option></select></div>'
+  +'<div class="form-group"><label class="form-label">ملاحظات عامة</label><textarea class="form-textarea" name="generalNotes">'+esc(monthData.generalNotes||s.generalNotes||'')+'</textarea></div>'
+  +'<div class="form-group" style="margin-top:1rem;padding:1rem;background:var(--clr-bg-light);border-radius:8px;border:1px solid var(--clr-border);">'
+  +'<label class="form-label" style="font-weight:600;color:var(--clr-text);">إدارة البيانات الشهرية</label>'
+  +'<p style="font-size:0.85rem;color:var(--clr-muted);margin-bottom:0.5rem;">يمكنك إضافة بيانات لشهر جديد أو التعديل على البيانات الحالية</p>'
+  +'<button type="button" class="btn btn-accent" id="addNewMonthBtn" style="font-size:0.9rem;padding:0.5rem 1rem;">+ إضافة شهر جديد</button>'
+  +'</div>';
 }
 function openAddStudentModal(){
   openModal('<div class="modal-header"><h3>إضافة طالب جديد</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="stuForm">'+studentFormHtml({})+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="stuSaveBtn">حفظ الطالب</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');
@@ -497,7 +527,88 @@ function openAddStudentModal(){
 }
 function openEditStudentModal(id){
   var students=load('students');var s=students.find(function(x){return x.id===id;});if(!s)return;
-  openModal('<div class="modal-header"><h3>تعديل بيانات الطالب</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="stuForm">'+studentFormHtml(s)+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="stuSaveBtn">حفظ التغييرات</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');
+  
+  // Get monthly data for this student
+  var monthlyData=load('studentMonthlyData').filter(function(m){return m.studentId===id;});
+  var currentMonthData=monthlyData.find(function(m){return m.monthIndex===s.currentMonth&&m.year===s.currentYear});
+  
+  openModal('<div class="modal-header"><h3>تعديل بيانات الطالب</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="stuForm">'+studentFormHtml(s, currentMonthData)+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="stuSaveBtn">حفظ التغييرات</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');
+  
+  // Add new month button functionality
+  var addMonthBtn=document.getElementById('addNewMonthBtn');
+  if(addMonthBtn){
+    addMonthBtn.onclick=function(){
+      var monthSelect=document.getElementById('monthSelect');
+      var yearSelect=document.getElementById('yearSelect');
+      var currentMonth=parseInt(monthSelect.value);
+      var currentYear=parseInt(yearSelect.value);
+      
+      // Calculate next month
+      var nextMonth=currentMonth+1;
+      var nextYear=currentYear;
+      if(nextMonth>11){
+        nextMonth=0;
+        nextYear++;
+      }
+      
+      // Check if next month data already exists
+      var nextMonthData=monthlyData.find(function(m){return m.monthIndex===nextMonth&&m.year===nextYear});
+      
+      if(nextMonthData){
+        // Load existing data for next month
+        monthSelect.value=nextMonth;
+        yearSelect.value=nextYear;
+        document.querySelector('[name="attendanceRate"]').value=nextMonthData.attendanceRate||'';
+        document.querySelector('[name="homeworkCompleted"]').value=nextMonthData.homeworkCompleted||'';
+        document.querySelector('[name="examAvg"]').value=nextMonthData.examAvg||'';
+        document.querySelector('[name="paymentStatus"]').value=nextMonthData.paymentStatus||'غير مسجل';
+        document.querySelector('[name="status"]').value=nextMonthData.status||'منتظم';
+        document.querySelector('[name="generalNotes"]').value=nextMonthData.generalNotes||'';
+        showToast('تم تحميل بيانات شهر '+MONTHS[nextMonth]+' '+nextYear);
+      }else{
+        // Create new empty data for next month
+        monthSelect.value=nextMonth;
+        yearSelect.value=nextYear;
+        document.querySelector('[name="attendanceRate"]').value='';
+        document.querySelector('[name="homeworkCompleted"]').value='';
+        document.querySelector('[name="examAvg"]').value='';
+        document.querySelector('[name="paymentStatus"]').value='غير مسجل';
+        document.querySelector('[name="status"]').value='منتظم';
+        document.querySelector('[name="generalNotes"]').value='';
+        showToast('تم إنشاء بيانات جديدة لشهر '+MONTHS[nextMonth]+' '+nextYear);
+      }
+    };
+  }
+  
+  // Handle month/year change to load existing data
+  var monthSelect=document.getElementById('monthSelect');
+  var yearSelect=document.getElementById('yearSelect');
+  
+  function loadMonthData(){
+    var selectedMonth=parseInt(monthSelect.value);
+    var selectedYear=parseInt(yearSelect.value);
+    var selectedMonthData=monthlyData.find(function(m){return m.monthIndex===selectedMonth&&m.year===selectedYear});
+    
+    if(selectedMonthData){
+      document.querySelector('[name="attendanceRate"]').value=selectedMonthData.attendanceRate||'';
+      document.querySelector('[name="homeworkCompleted"]').value=selectedMonthData.homeworkCompleted||'';
+      document.querySelector('[name="examAvg"]').value=selectedMonthData.examAvg||'';
+      document.querySelector('[name="paymentStatus"]').value=selectedMonthData.paymentStatus||'غير مسجل';
+      document.querySelector('[name="status"]').value=selectedMonthData.status||'منتظم';
+      document.querySelector('[name="generalNotes"]').value=selectedMonthData.generalNotes||'';
+    }else{
+      document.querySelector('[name="attendanceRate"]').value='';
+      document.querySelector('[name="homeworkCompleted"]').value='';
+      document.querySelector('[name="examAvg"]').value='';
+      document.querySelector('[name="paymentStatus"]').value='غير مسجل';
+      document.querySelector('[name="status"]').value='منتظم';
+      document.querySelector('[name="generalNotes"]').value='';
+    }
+  }
+  
+  monthSelect.addEventListener('change',loadMonthData);
+  yearSelect.addEventListener('change',loadMonthData);
+  
   document.getElementById('stuSaveBtn').onclick=async function(){
     var f=document.getElementById('stuForm');var data=Object.fromEntries(new FormData(f));
     if(!data.name.trim()){showToast('من فضلك أدخل اسم الطالب.','error');return;}
@@ -507,7 +618,7 @@ function openEditStudentModal(id){
     data.currentYear=parseInt(data.currentYear)||new Date().getFullYear();
     
     try {
-      // Update on backend
+      // Update student basic info
       const res = await fetch(`/api/students/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -519,6 +630,32 @@ function openEditStudentModal(id){
         // Update local data
         var idx=students.findIndex(function(x){return x.id===id;});
         students[idx]=updatedStudent;window.APP_DATA.students = students;
+        
+        // Update or create monthly data
+        var allMonthlyData=load('studentMonthlyData');
+        var existingMonthIndex=allMonthlyData.findIndex(function(m){return m.studentId===id&&m.monthIndex===data.currentMonth&&m.year===data.currentYear});
+        
+        var monthData={
+          id:existingMonthIndex>=0?allMonthlyData[existingMonthIndex].id:genId(),
+          studentId:id,
+          monthIndex:parseInt(data.currentMonth),
+          year:parseInt(data.currentYear),
+          attendanceRate:parseInt(data.attendanceRate)||0,
+          homeworkCompleted:data.homeworkCompleted||'0/0',
+          examAvg:parseInt(data.examAvg)||0,
+          paymentStatus:data.paymentStatus||'غير مسجل',
+          status:data.status||'منتظم',
+          generalNotes:data.generalNotes||''
+        };
+        
+        if(existingMonthIndex>=0){
+          allMonthlyData[existingMonthIndex]=monthData;
+        }else{
+          allMonthlyData.push(monthData);
+        }
+        
+        save('studentMonthlyData',allMonthlyData);
+        
         logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب');closeModal();renderStudents();renderMonthlyStudentEvaluation();
       } else {
         showToast('حدث خطأ أثناء تحديث الطالب','error');

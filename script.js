@@ -156,6 +156,21 @@ function syncGradeOptions() {
 // We load from backend or fallback to empty array
 let CACHED_STUDENTS = [];
 const getStudents = () => CACHED_STUDENTS;
+
+// Initialize APP_DATA if not exists
+if (!window.APP_DATA) {
+  window.APP_DATA = {
+    students: [],
+    homework: [],
+    exams: [],
+    attendance: [],
+    payments: [],
+    notes: [],
+    activities: [],
+    monthlyEvaluations: [],
+    studentMonthlyData: []
+  };
+}
 async function fetchStudents() {
   try {
     // Try improved API first
@@ -170,6 +185,11 @@ async function fetchStudents() {
         const data = await legacyRes.json();
         // Support both key names for compatibility
         CACHED_STUDENTS = data.students || data.nada_students || [];
+        // Load monthly data as well
+        if (data.studentMonthlyData || data.nada_studentMonthlyData) {
+          window.APP_DATA = window.APP_DATA || {};
+          window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
+        }
         console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
       }
     }
@@ -433,11 +453,26 @@ function renderStudentHeader(student, initials) {
 
 /* ---- Overview Cards ---- */
 function renderOverviewCards(student) {
-  const payStatus = student.payStatus || student.pay_status || "—";
+  // Get current month data if available
+  const currentMonth = student.currentMonth !== undefined ? student.currentMonth : new Date().getMonth();
+  const currentYear = student.currentYear || new Date().getFullYear();
+  
+  // Try to get monthly data from backend
+  let monthlyData = null;
+  if (window.APP_DATA && window.APP_DATA.studentMonthlyData) {
+    monthlyData = window.APP_DATA.studentMonthlyData.find(m => 
+      m.studentId === student.id && 
+      m.monthIndex === currentMonth && 
+      m.year === currentYear
+    );
+  }
+  
+  // Use monthly data if available, otherwise fall back to student data
+  const payStatus = monthlyData ? monthlyData.paymentStatus : (student.payStatus || student.pay_status || "—");
   const payIcon = payStatus === "خالص" ? "green" : payStatus === "متبقي" ? "amber" : payStatus === "لم يتم الدفع" ? "red" : "gray";
-  const attPct = student.attRate || student.att_rate || "—";
-  const hwStats = student.hwCompleted || student.hw_completed || "—";
-  const examAvg = student.examAvg || student.exam_avg || "—";
+  const attPct = monthlyData ? monthlyData.attendanceRate : (student.attRate || student.att_rate || "—");
+  const hwStats = monthlyData ? monthlyData.homeworkCompleted : (student.hwCompleted || student.hw_completed || "—");
+  const examAvg = monthlyData ? monthlyData.examAvg : (student.examAvg || student.exam_avg || "—");
 
   return `
     <div class="overview-grid">

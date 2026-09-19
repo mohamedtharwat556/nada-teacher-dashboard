@@ -43,7 +43,7 @@ app.use((req, res, next) => {
 
 // Default empty state
 const defaultData = {
-    students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [], monthlyEvaluations: []
+    students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [], monthlyEvaluations: [], studentMonthlyData: []
 };
 
 // Health check endpoint
