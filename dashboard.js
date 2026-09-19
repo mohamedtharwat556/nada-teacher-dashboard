@@ -1,17 +1,22 @@
 
 /* dashboard.js - Teacher Dashboard - استاذة ندى */
 
-const KEYS={students:'students',homework:'homework',exams:'exams',attendance:'attendance',payments:'payments',notes:'notes',activities:'activities'};
+const KEYS={students:'students',homework:'homework',exams:'exams',attendance:'attendance',payments:'payments',notes:'notes',activities:'activities',monthlyEvaluations:'monthlyEvaluations'};
 const GRADES=['الصف الرابع الابتدائي','الصف الخامس الابتدائي','الصف السادس الابتدائي','الصف الأول الإعدادي','الصف الثاني الإعدادي','الصف الثالث الإعدادي','الصف الأول الثانوي'];
 const CENTERS=['الكاشف','سيف الدين'];
 const NOTE_CATS=['أكاديمي','واجبات','حضور','سلوك','متابعة عامة','متميز'];
+const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 function genId(){return '_'+Math.random().toString(36).substr(2,9);}
 function today(){return new Date().toISOString().split('T')[0];}
 function now(){return new Date().toISOString();}
 function fmtDate(d){return d?new Date(d).toLocaleDateString('ar-EG'):'—';}
 function fmtTime(d){return d?new Date(d).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'—';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [] };
+function getMonthStart(year, monthIndex){return new Date(year, monthIndex, 1).toISOString().split('T')[0];}
+function getMonthEnd(year, monthIndex){return new Date(year, monthIndex + 1, 0).toISOString().split('T')[0];}
+function getMonthFromDate(dateStr){const d=new Date(dateStr);return MONTHS[d.getMonth()];}
+function getYearFromDate(dateStr){return new Date(dateStr).getFullYear();}
+window.APP_DATA = { students: [], homework: [], exams: [], attendance: [], payments: [], notes: [], activities: [], monthlyEvaluations: [] };
 async function initBackend() {
   try {
     // Load students from improved API
@@ -29,7 +34,8 @@ async function initBackend() {
         attendance: data.attendance || data.nada_attendance || [],
         payments: data.payments || data.nada_payments || [],
         notes: data.notes || data.nada_notes || [],
-        activities: data.activities || data.nada_activities || []
+        activities: data.activities || data.nada_activities || [],
+        monthlyEvaluations: data.monthlyEvaluations || data.nada_monthlyEvaluations || []
       };
     }
     
@@ -53,7 +59,8 @@ async function initBackend() {
           attendance: data.attendance || data.nada_attendance || [],
           payments: data.payments || data.nada_payments || [],
           notes: data.notes || data.nada_notes || [],
-          activities: data.activities || data.nada_activities || []
+          activities: data.activities || data.nada_activities || [],
+          monthlyEvaluations: data.monthlyEvaluations || data.nada_monthlyEvaluations || []
         };
       }
     } catch(legacyError) {
@@ -102,6 +109,49 @@ function getStudentName(id){return getStudent(id).name||'—';}
 function calcAttendanceRate(id){const r=load('attendance').filter(a=>a.studentId===id);if(!r.length)return 100;return Math.round((r.filter(a=>a.status==='حاضر'||a.status==='متأخر').length/r.length)*100);}
 function calcExamAvg(id){const e=load('exams').filter(e=>e.studentId===id);if(!e.length)return '—';return Math.round(e.reduce((s,x)=>s+(x.score/x.maxScore)*100,0)/e.length);}
 function calcHomeworkRate(id){const h=load('homework').filter(h=>h.studentId===id);if(!h.length)return 100;return Math.round((h.filter(h=>h.status==='مكتمل').length/h.length)*100);}
+function calcMonthlyAttendanceRate(id, monthIndex, year){
+  var monthlyEvals=load('monthlyEvaluations')||[];
+  var manualEval=monthlyEvals.find(function(e){return e.studentId===id&&e.monthIndex===monthIndex&&e.year===year&&e.isManual});
+  if(manualEval&&manualEval.attendanceRate!==undefined)return manualEval.attendanceRate;
+  var monthStart=getMonthStart(year, parseInt(monthIndex));
+  var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+  var r=load('attendance').filter(function(a){return a.studentId===id&&a.date>=monthStart&&a.date<=monthEnd;});
+  if(!r.length)return 100;
+  return Math.round((r.filter(function(a){return a.status==='حاضر'||a.status==='متأخر';}).length/r.length)*100);
+}
+function calcMonthlyExamAvg(id, monthIndex, year){
+  var monthlyEvals=load('monthlyEvaluations')||[];
+  var manualEval=monthlyEvals.find(function(e){return e.studentId===id&&e.monthIndex===monthIndex&&e.year===year&&e.isManual});
+  if(manualEval&&manualEval.examAvg!==null)return manualEval.examAvg;
+  var monthStart=getMonthStart(year, parseInt(monthIndex));
+  var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+  var e=load('exams').filter(function(ex){return ex.studentId===id&&ex.date>=monthStart&&ex.date<=monthEnd;});
+  if(!e.length)return '—';
+  return Math.round(e.reduce(function(s,x){return s+(x.score/x.maxScore)*100;},0)/e.length);
+}
+function calcMonthlyHomeworkRate(id, monthIndex, year){
+  var monthlyEvals=load('monthlyEvaluations')||[];
+  var manualEval=monthlyEvals.find(function(e){return e.studentId===id&&e.monthIndex===monthIndex&&e.year===year&&e.isManual});
+  if(manualEval&&manualEval.homeworkRate!==undefined)return manualEval.homeworkRate;
+  var monthStart=getMonthStart(year, parseInt(monthIndex));
+  var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+  var h=load('homework').filter(function(hw){return hw.studentId===id&&hw.date>=monthStart&&hw.date<=monthEnd;});
+  if(!h.length)return 100;
+  return Math.round((h.filter(function(hw){return hw.status==='مكتمل';}).length/h.length)*100);
+}
+function calcMonthlyPaymentStatus(id, monthIndex, year){
+  var monthlyEvals=load('monthlyEvaluations')||[];
+  var manualEval=monthlyEvals.find(function(e){return e.studentId===id&&e.monthIndex===monthIndex&&e.year===year&&e.isManual});
+  if(manualEval&&manualEval.paymentStatus)return manualEval.paymentStatus;
+  var monthName=MONTHS[parseInt(monthIndex)];
+  var p=load('payments').filter(function(pay){return pay.studentId===id&&pay.month.includes(monthName)&&pay.month.includes(year);});
+  if(!p.length)return 'غير مسجل';
+  var totalPaid=p.reduce(function(sum,pay){return sum+pay.paid;},0);
+  var totalRemaining=p.reduce(function(sum,pay){return sum+(pay.remaining||0);},0);
+  if(totalRemaining===0)return 'مدفوع بالكامل';
+  if(totalPaid===0)return 'لم يتم الدفع';
+  return 'جزئي';
+}
 function paymentStatus(p){if(p.remaining===0)return{label:'مدفوع',cls:'badge-green'};if(p.paid===0)return{label:'غير مدفوع',cls:'badge-red'};return{label:'جزئي',cls:'badge-yellow'};}
 
 function showToast(msg,type='success'){
@@ -133,7 +183,8 @@ async function clearAllData() {
       attendance: [],
       payments: [],
       notes: [],
-      activities: []
+      activities: [],
+      monthlyEvaluations: []
     };
 
     // Clear backend data
@@ -147,7 +198,8 @@ async function clearAllData() {
         attendance: [],
         payments: [],
         notes: [],
-        activities: []
+        activities: [],
+        monthlyEvaluations: []
       })
     });
 
@@ -174,7 +226,7 @@ async function clearAllData() {
 // Function to show clear data confirmation
 function showClearDataConfirmation() {
   confirmDel(
-    'هل أنت متأكد من مسح جميع البيانات؟<br><br>⚠️ هذا الإجراء سيحذف:<br>• جميع الطلاب<br>• جميع الواجبات<br>• جميع الامتحانات<br>• جميع سجلات الحضور<br>• جميع المدفوعات<br>• جميع الملاحظات<br><br>لا يمكن التراجع عن هذا الإجراء!',
+    'هل أنت متأكد من مسح جميع البيانات؟<br><br>⚠️ هذا الإجراء سيحذف:<br>• جميع الطلاب<br>• جميع الواجبات<br>• جميع الامتحانات<br>• جميع سجلات الحضور<br>• جميع المدفوعات<br>• جميع الملاحظات<br>• جميع التقييمات الشهرية<br><br>لا يمكن التراجع عن هذا الإجراء!',
     clearAllData
   );
 }
@@ -288,6 +340,7 @@ function seedDemoData(){
     {id:'act2',studentName:'سارة محمود',action:'تم تسجيل غياب',timestamp:'2026-09-15T08:30:00.000Z'},
     {id:'act3',studentName:'مريم حسن',action:'تمت إضافة ملاحظة',timestamp:'2026-09-15T10:00:00.000Z'}
   ]);
+  save('monthlyEvaluations',[]);
 }
 
 
@@ -348,19 +401,26 @@ function renderHome(){
 // STUDENTS
 function renderStudents(){
   var sec=document.getElementById('studentsSection');
+  var currentYear=new Date().getFullYear();
+  var currentMonth=new Date().getMonth();
   sec.innerHTML='<div class="section-header"><h2>الطلاب</h2><button class="btn btn-accent" id="addStuBtn">+ إضافة طالب</button></div>'
   +'<div class="table-card"><div class="table-toolbar">'
   +'<input type="text" class="form-input" id="stuSearch" placeholder="ابحث باسم الطالب..." style="max-width:220px"/>'
+  +'<select class="form-select" id="stuMonth" style="max-width:160px"><option value="">— الكل —</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+(i===currentMonth?' selected':'')+'>'+m+'</option>';}).join('')+'</select>'
+  +'<select class="form-select" id="stuYear" style="max-width:120px"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>'
   +'<select class="form-select" id="stuGrade" style="max-width:220px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select>'
   +'<select class="form-select" id="stuCenter" style="max-width:160px"><option value="">— المدرس / السنتر —</option>'+CENTERS.map(function(c){return '<option value="'+esc(c)+'">'+c+'</option>';}).join('')+'</select>'
   +'<select class="form-select" id="stuStatus" style="max-width:160px"><option value="">— الحالة —</option><option>منتظم</option><option>يحتاج متابعة</option></select>'
-  +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>';
+  +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>'
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري الشامل</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الحضور الشهري</th><th>الواجبات الشهرية</th><th>الامتحانات الشهرية</th><th>المدفوعات الشهرية</th><th>التقييم العام</th><th>الإجراءات</th></tr></thead><tbody id="stuMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addStuBtn').onclick=function(){openAddStudentModal();};
   document.getElementById('stuSearch').oninput=renderStudentRows;
   document.getElementById('stuGrade').onchange=renderStudentRows;
   document.getElementById('stuCenter').onchange=renderStudentRows;
   document.getElementById('stuStatus').onchange=renderStudentRows;
+  ['stuMonth','stuYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderStudentRows();renderMonthlyStudentEvaluation();};}});
   renderStudentRows();
+  renderMonthlyStudentEvaluation();
 }
 function renderStudentRows(){
   var tbody=document.getElementById('stuTbody');if(!tbody)return;
@@ -368,6 +428,8 @@ function renderStudentRows(){
   var g=document.getElementById('stuGrade')?document.getElementById('stuGrade').value:'';
   var c=document.getElementById('stuCenter')?document.getElementById('stuCenter').value:'';
   var st=document.getElementById('stuStatus')?document.getElementById('stuStatus').value:'';
+  var monthIndex=document.getElementById('stuMonth')?document.getElementById('stuMonth').value:'';
+  var year=document.getElementById('stuYear')?document.getElementById('stuYear').value:'2026';
   var all=load('students').filter(function(s){return(!q||s.name.toLowerCase().includes(q))&&(!g||s.grade===g)&&(!c||s.center===c)&&(!st||s.status===st);});
   if(!all.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات طلاب.</td></tr>';return;}
   tbody.innerHTML=all.map(function(s){
@@ -481,87 +543,258 @@ function openStudentProfile(id){
   var ovHtml='<div class="overview-grid"><div class="ov-card"><div class="ov-num">'+att+'%</div><div class="ov-lbl">نسبة الحضور</div></div><div class="ov-card"><div class="ov-num">'+(exam==='—'?'—':exam+'%')+'</div><div class="ov-lbl">متوسط الامتحانات</div></div><div class="ov-card"><div class="ov-num">'+hw+'</div><div class="ov-lbl">إنجاز الواجبات</div></div><div class="ov-card"><div class="ov-num">'+payText+'</div><div class="ov-lbl">حالة المصروفات</div></div></div>'+(lastNote?'<div style="margin-top:1rem;padding:.8rem;background:#fffbf0;border-radius:8px;border:1px solid #f0d9a0"><strong>آخر ملاحظة:</strong> '+esc(lastNote.content)+'</div>':'');
   openModal('<div class="modal-header"><div><h3 style="font-size:1.1rem">'+esc(s.name)+'</h3><span style="font-size:.8rem;color:var(--clr-muted)">'+esc(s.grade)+' — '+esc(s.center||'غير محدد')+'</span></div><button class="modal-close">✕</button></div><div class="modal-body">'+ovHtml+'</div>');
 }
+function renderMonthlyStudentEvaluation(){
+  var tbody=document.getElementById('stuMonthlyTable');if(!tbody)return;
+  var monthIndex=document.getElementById('stuMonth')?document.getElementById('stuMonth').value:'';
+  var year=document.getElementById('stuYear')?document.getElementById('stuYear').value:'2026';
+  var g=document.getElementById('stuGrade')?document.getElementById('stuGrade').value:'';
+  var c=document.getElementById('stuCenter')?document.getElementById('stuCenter').value:'';
+  var st=document.getElementById('stuStatus')?document.getElementById('stuStatus').value:'';
+  var q=(document.getElementById('stuSearch')?document.getElementById('stuSearch').value:'').trim().toLowerCase();
+  var students=load('students').filter(function(s){return(!q||s.name.toLowerCase().includes(q))&&(!g||s.grade===g)&&(!c||s.center===c)&&(!st||s.status===st);});
+  if(!students.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات.</td></tr>';return;}
+  if(monthIndex===''){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--clr-muted)">اختر شهر لعرض التقييم الشهري.</td></tr>';return;
+  }
+  tbody.innerHTML=students.map(function(s){
+    var att=calcMonthlyAttendanceRate(s.id, monthIndex, year);
+    var hw=calcMonthlyHomeworkRate(s.id, monthIndex, year);
+    var exam=calcMonthlyExamAvg(s.id, monthIndex, year);
+    var pay=calcMonthlyPaymentStatus(s.id, monthIndex, year);
+    var overallScore=0;
+    var count=0;
+    if(att!==100){overallScore+=att;count++;}
+    if(hw!==100){overallScore+=hw;count++;}
+    if(exam!=='—'){overallScore+=Number(exam);count++;}
+    var avgRate=count?Math.round(overallScore/count):0;
+    var payColor=pay==='مدفوع بالكامل'?'badge-green':pay==='لم يتم الدفع'?'badge-red':'badge-yellow';
+    var overallColor=avgRate>=75?'badge-green':avgRate>=50?'badge-yellow':'badge-red';
+    var overallLabel=avgRate>=75?'ممتاز':avgRate>=50?'جيد':'يحتاج تحسين';
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td><span class="badge '+(att>=75?'badge-green':att>=50?'badge-yellow':'badge-red')+'">'+att+'%</span></td><td><span class="badge '+(hw>=75?'badge-green':hw>=50?'badge-yellow':'badge-red')+'">'+hw+'%</span></td><td><span class="badge '+(exam==='—'?'badge-gray':Number(exam)>=75?'badge-green':Number(exam)>=50?'badge-yellow':'badge-red')+'">'+(exam==='—'?'—':exam+'%')+'</span></td><td><span class="badge '+payColor+'">'+pay+'</span></td><td><span class="badge '+overallColor+'">'+overallLabel+'</span></td><td><div class="actions-cell"><button class="act-btn act-btn-edit" data-id="'+s.id+'">تعديل</button></div></td></tr>';
+  }).join('');
+  tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditMonthlyEvaluationModal(b.dataset.id, monthIndex, year);};});
+}
+function openEditMonthlyEvaluationModal(studentId, monthIndex, year){
+  var s=getStudent(studentId);
+  var monthName=MONTHS[parseInt(monthIndex)];
+  var att=calcMonthlyAttendanceRate(studentId, monthIndex, year);
+  var hw=calcMonthlyHomeworkRate(studentId, monthIndex, year);
+  var exam=calcMonthlyExamAvg(studentId, monthIndex, year);
+  var pay=calcMonthlyPaymentStatus(studentId, monthIndex, year);
+  openModal('<div class="modal-header"><h3>تعديل التقييم الشهري</h3><button class="modal-close">✕</button></div><div class="modal-body"><p style="margin-bottom:1rem;color:var(--clr-muted)"><strong>الطالب:</strong> '+esc(s.name)+' | <strong>الشهر:</strong> '+monthName+' '+year+'</p><form id="monthlyEvalForm"><div class="form-group"><label class="form-label">نسبة الحضور الشهري (%)</label><input class="form-input" type="number" name="manualAtt" value="'+att+'" min="0" max="100"/></div><div class="form-group"><label class="form-label">نسبة الواجبات الشهرية (%)</label><input class="form-input" type="number" name="manualHw" value="'+hw+'" min="0" max="100"/></div><div class="form-group"><label class="form-label">متوسط الامتحانات الشهرية (%)</label><input class="form-input" type="number" name="manualExam" value="'+(exam==='—'?'':exam)+'" min="0" max="100" placeholder="اتركه فارغاً إذا لا توجد امتحانات"/></div><div class="form-group"><label class="form-label">حالة المدفوعات الشهرية</label><select class="form-select" name="manualPay"><option value="مدفوع بالكامل"'+(pay==='مدفوع بالكامل'?' selected':'')+'>مدفوع بالكامل</option><option value="جزئي"'+(pay==='جزئي'?' selected':'')+'>جزئي</option><option value="لم يتم الدفع"'+(pay==='لم يتم الدفع'?' selected':'')+'>لم يتم الدفع</option><option value="غير مسجل"'+(pay==='غير مسجل'?' selected':'')+'>غير مسجل</option></select></div><div class="form-group"><label class="form-label">ملاحظات التقييم الشهري</label><textarea class="form-textarea" name="monthlyNotes" placeholder="أضف ملاحظات إضافية عن التقييم الشهري..."></textarea></div></form></div><div class="modal-footer"><button class="btn btn-accent" id="saveMonthlyEvalBtn">حفظ التقييم</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');
+  document.getElementById('saveMonthlyEvalBtn').onclick=function(){
+    var f=document.getElementById('monthlyEvalForm');
+    var d=Object.fromEntries(new FormData(f));
+    d.manualAtt=Number(d.manualAtt);
+    d.manualHw=Number(d.manualHw);
+    d.manualExam=d.manualExam?Number(d.manualExam):null;
+    var monthlyEvaluations=load('monthlyEvaluations')||[];
+    var existingIndex=monthlyEvaluations.findIndex(function(e){return e.studentId===studentId&&e.monthIndex===monthIndex&&e.year===year;});
+    var evaluationData={
+      id:existingIndex>=0?monthlyEvaluations[existingIndex].id:genId(),
+      studentId:studentId,
+      monthIndex:monthIndex,
+      year:year,
+      attendanceRate:d.manualAtt,
+      homeworkRate:d.manualHw,
+      examAvg:d.manualExam,
+      paymentStatus:d.manualPay,
+      notes:d.monthlyNotes,
+      isManual:true,
+      timestamp:now()
+    };
+    if(existingIndex>=0){
+      monthlyEvaluations[existingIndex]=evaluationData;
+    }else{
+      monthlyEvaluations.push(evaluationData);
+    }
+    if(!window.APP_DATA.monthlyEvaluations){
+      window.APP_DATA.monthlyEvaluations=[];
+    }
+    window.APP_DATA.monthlyEvaluations=monthlyEvaluations;
+    save('monthlyEvaluations',monthlyEvaluations);
+    logActivity(s.name,'تم تعديل التقييم الشهري لشهر '+monthName);
+    showToast('تم حفظ التقييم الشهري بنجاح');
+    closeModal();
+    renderMonthlyStudentEvaluation();
+  };
+}
 
 
 // HOMEWORK
 function renderHomework(){
   var sec=document.getElementById('homeworkSection');
+  var currentYear=new Date().getFullYear();
+  var currentMonth=new Date().getMonth();
   sec.innerHTML='<div class="section-header"><h2>إدارة الواجبات</h2><button class="btn btn-accent" id="addHwBtn">+ إضافة واجب</button></div>'
-  +'<div class="table-card"><div class="table-toolbar"><input type="text" class="form-input" id="hwSearch" placeholder="بحث..." style="max-width:200px"/><select class="form-select" id="hwGrade" style="max-width:200px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select><select class="form-select" id="hwStatus" style="max-width:160px"><option value="">— الحالة —</option><option>مكتمل</option><option>متأخر</option><option>لم يتم التسليم</option></select></div>'
-  +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الواجب</th><th>التاريخ</th><th>الدرجة</th><th>الحالة</th><th>الملاحظة</th><th>الإجراءات</th></tr></thead><tbody id="hwTbody"></tbody></table></div></div>';
+  +'<div class="table-card"><div class="table-toolbar"><input type="text" class="form-input" id="hwSearch" placeholder="بحث..." style="max-width:200px"/><select class="form-select" id="hwMonth" style="max-width:160px"><option value="">— الكل —</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+(i===currentMonth?' selected':'')+'>'+m+'</option>';}).join('')+'</select><select class="form-select" id="hwYear" style="max-width:120px"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select><select class="form-select" id="hwGrade" style="max-width:200px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select><select class="form-select" id="hwStatus" style="max-width:160px"><option value="">— الحالة —</option><option>مكتمل</option><option>متأخر</option><option>لم يتم التسليم</option></select></div>'
+  +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الواجب</th><th>التاريخ</th><th>الدرجة</th><th>الحالة</th><th>الملاحظة</th><th>الإجراءات</th></tr></thead><tbody id="hwTbody"></tbody></table></div></div>'
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري للواجبات</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الواجبات المكتملة</th><th>الواجبات المتأخرة</th><th>لم يتم التسليم</th><th>نسبة الإنجاز</th></tr></thead><tbody id="hwMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addHwBtn').onclick=function(){openAddHwModal();};
   ['hwSearch','hwGrade','hwStatus'].forEach(function(id){var el=document.getElementById(id);if(el){el.oninput=renderHwRows;el.onchange=renderHwRows;}});
+  ['hwMonth','hwYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderHwRows();renderMonthlyHomework();};}});
   renderHwRows();
+  renderMonthlyHomework();
 }
 function renderHwRows(){
   var tbody=document.getElementById('hwTbody');if(!tbody)return;
   var q=(document.getElementById('hwSearch')?document.getElementById('hwSearch').value:'').toLowerCase();
   var g=document.getElementById('hwGrade')?document.getElementById('hwGrade').value:'';
   var st=document.getElementById('hwStatus')?document.getElementById('hwStatus').value:'';
+  var monthIndex=document.getElementById('hwMonth')?document.getElementById('hwMonth').value:'';
+  var year=document.getElementById('hwYear')?document.getElementById('hwYear').value:'2026';
   var students=load('students');
-  var all=load('homework').filter(function(h){var stu=students.find(function(s){return s.id===h.studentId;});var nm=stu?stu.name.toLowerCase():'';return(!q||nm.includes(q)||h.title.toLowerCase().includes(q))&&(!g||stu&&stu.grade===g)&&(!st||h.status===st);});
+  var all=load('homework');
+  if(monthIndex!==''){
+    var monthStart=getMonthStart(year, parseInt(monthIndex));
+    var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+    all=all.filter(function(h){return h.date>=monthStart&&h.date<=monthEnd;});
+  }
+  all=all.filter(function(h){var stu=students.find(function(s){return s.id===h.studentId;});var nm=stu?stu.name.toLowerCase():'';return(!q||nm.includes(q)||h.title.toLowerCase().includes(q))&&(!g||stu&&stu.grade===g)&&(!st||h.status===st);});
   if(!all.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد واجبات.</td></tr>';return;}
   tbody.innerHTML=all.map(function(h){var cls=h.status==='مكتمل'?'badge-green':h.status==='متأخر'?'badge-yellow':'badge-red';return '<tr><td>'+esc(getStudentName(h.studentId))+'</td><td>'+esc(h.title)+'</td><td>'+fmtDate(h.date)+'</td><td>'+h.score+'/'+h.maxScore+'</td><td><span class="badge '+cls+'">'+esc(h.status)+'</span></td><td>'+esc(h.note||'—')+'</td><td><div class="actions-cell"><button class="act-btn act-btn-edit" data-id="'+h.id+'">تعديل</button><button class="act-btn act-btn-delete" data-id="'+h.id+'">حذف</button></div></td></tr>';}).join('');
   tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditHwModal(b.dataset.id);};});
-  tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذا الواجب؟',function(){save('homework',load('homework').filter(function(h){return h.id!==b.dataset.id;}));showToast('تم حذف الواجب','error');renderHwRows();});};});
+  tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذا الواجب؟',function(){save('homework',load('homework').filter(function(h){return h.id!==b.dataset.id;}));showToast('تم حذف الواجب','error');renderHwRows();renderMonthlyHomework();});};});
 }
 function hwFormHtml(h){var students=load('students');return '<div class="form-group"><label class="form-label">الطالب *</label><select class="form-select" name="studentId"><option value="">اختر الطالب</option>'+students.map(function(s){return '<option value="'+s.id+'"'+(h.studentId===s.id?' selected':'')+'>'+esc(s.name)+' — '+esc(s.grade)+'</option>';}).join('')+'</select></div><div class="form-group"><label class="form-label">اسم الواجب *</label><input class="form-input" name="title" value="'+esc(h.title||'')+'"/></div><div class="form-group"><label class="form-label">التاريخ</label><input class="form-input" type="date" name="date" value="'+(h.date||today())+'"/></div><div class="form-group"><label class="form-label">الدرجة النهائية</label><input class="form-input" type="number" name="maxScore" min="0" value="'+(h.maxScore||10)+'"/></div><div class="form-group"><label class="form-label">درجة الطالب</label><input class="form-input" type="number" name="score" min="0" value="'+(h.score||0)+'"/></div><div class="form-group"><label class="form-label">الحالة</label><select class="form-select" name="status"><option value="مكتمل"'+(h.status==='مكتمل'?' selected':'')+'>مكتمل</option><option value="متأخر"'+(h.status==='متأخر'?' selected':'')+'>متأخر</option><option value="لم يتم التسليم"'+(h.status==='لم يتم التسليم'?' selected':'')+'>لم يتم التسليم</option></select></div><div class="form-group"><label class="form-label">ملاحظة</label><input class="form-input" name="note" value="'+esc(h.note||'')+'"/></div>';}
 function openAddHwModal(){openModal('<div class="modal-header"><h3>إضافة واجب</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="hwForm">'+hwFormHtml({})+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="hwSaveBtn">حفظ الواجب</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');document.getElementById('hwSaveBtn').onclick=function(){saveHw(null);};}
 function openEditHwModal(id){var h=load('homework').find(function(x){return x.id===id;});if(!h)return;openModal('<div class="modal-header"><h3>تعديل الواجب</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="hwForm">'+hwFormHtml(h)+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="hwSaveBtn">حفظ التغييرات</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');document.getElementById('hwSaveBtn').onclick=function(){saveHw(id);};}
-function saveHw(id){var f=document.getElementById('hwForm');var d=Object.fromEntries(new FormData(f));if(!d.studentId){showToast('من فضلك اختر الطالب.','error');return;}if(!d.title.trim()){showToast('من فضلك أدخل اسم الواجب.','error');return;}d.maxScore=Number(d.maxScore);d.score=Number(d.score);if(d.score<0){showToast('الدرجة لا يمكن أن تكون سالبة.','error');return;}if(d.score>d.maxScore){showToast('درجة الطالب لا يمكن أن تكون أكبر من الدرجة النهائية.','error');return;}var hws=load('homework');if(id){var i=hws.findIndex(function(x){return x.id===id;});hws[i]=Object.assign({},hws[i],d);}else hws.push(Object.assign({id:genId()},d));save('homework',hws);logActivity(getStudentName(d.studentId),id?'تم تعديل واجب':'تمت إضافة واجب');showToast(id?'تم تحديث الواجب':'تمت إضافة الواجب بنجاح');closeModal();renderHwRows();}
+function saveHw(id){var f=document.getElementById('hwForm');var d=Object.fromEntries(new FormData(f));if(!d.studentId){showToast('من فضلك اختر الطالب.','error');return;}if(!d.title.trim()){showToast('من فضلك أدخل اسم الواجب.','error');return;}d.maxScore=Number(d.maxScore);d.score=Number(d.score);if(d.score<0){showToast('الدرجة لا يمكن أن تكون سالبة.','error');return;}if(d.score>d.maxScore){showToast('درجة الطالب لا يمكن أن تكون أكبر من الدرجة النهائية.','error');return;}var hws=load('homework');if(id){var i=hws.findIndex(function(x){return x.id===id;});hws[i]=Object.assign({},hws[i],d);}else hws.push(Object.assign({id:genId()},d));save('homework',hws);logActivity(getStudentName(d.studentId),id?'تم تعديل واجب':'تمت إضافة واجب');showToast(id?'تم تحديث الواجب':'تمت إضافة الواجب بنجاح');closeModal();renderHwRows();renderMonthlyHomework();}
+function renderMonthlyHomework(){
+  var tbody=document.getElementById('hwMonthlyTable');if(!tbody)return;
+  var monthIndex=document.getElementById('hwMonth')?document.getElementById('hwMonth').value:'';
+  var year=document.getElementById('hwYear')?document.getElementById('hwYear').value:'2026';
+  var g=document.getElementById('hwGrade')?document.getElementById('hwGrade').value:'';
+  var q=(document.getElementById('hwSearch')?document.getElementById('hwSearch').value:'').toLowerCase();
+  var students=load('students').filter(function(s){return(!g||s.grade===g)&&(!q||s.name.toLowerCase().includes(q));});
+  var allHomework=load('homework');
+  if(monthIndex!==''){
+    var monthStart=getMonthStart(year, parseInt(monthIndex));
+    var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+    allHomework=allHomework.filter(function(h){return h.date>=monthStart&&h.date<=monthEnd;});
+  }
+  if(!students.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات.</td></tr>';return;}
+  tbody.innerHTML=students.map(function(s){
+    var studentHw=allHomework.filter(function(h){return h.studentId===s.id;});
+    var completed=studentHw.filter(function(h){return h.status==='مكتمل';}).length;
+    var late=studentHw.filter(function(h){return h.status==='متأخر';}).length;
+    var notSubmitted=studentHw.filter(function(h){return h.status==='لم يتم التسليم';}).length;
+    var total=completed+late+notSubmitted;
+    var rate=total?Math.round((completed/total)*100):0;
+    var rateColor=rate>=75?'badge-green':rate>=50?'badge-yellow':'badge-red';
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td>'+completed+'</td><td>'+late+'</td><td>'+notSubmitted+'</td><td><span class="badge '+rateColor+'">'+rate+'%</span></td></tr>';
+  }).join('');
+}
 
 // EXAMS
 function renderExams(){
   var sec=document.getElementById('examsSection');
+  var currentYear=new Date().getFullYear();
+  var currentMonth=new Date().getMonth();
   sec.innerHTML='<div class="section-header"><h2>إدارة الامتحانات</h2><button class="btn btn-accent" id="addExamBtn">+ إضافة نتيجة</button></div>'
-  +'<div class="table-card"><div class="table-toolbar"><input type="text" class="form-input" id="exSearch" placeholder="بحث..." style="max-width:200px"/><select class="form-select" id="exGrade" style="max-width:200px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select></div>'
-  +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الامتحان</th><th>التاريخ</th><th>الدرجة</th><th>النسبة</th><th>التقييم</th><th>الإجراءات</th></tr></thead><tbody id="exTbody"></tbody></table></div></div>';
+  +'<div class="table-card"><div class="table-toolbar"><input type="text" class="form-input" id="exSearch" placeholder="بحث..." style="max-width:200px"/><select class="form-select" id="exMonth" style="max-width:160px"><option value="">— الكل —</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+(i===currentMonth?' selected':'')+'>'+m+'</option>';}).join('')+'</select><select class="form-select" id="exYear" style="max-width:120px"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select><select class="form-select" id="exGrade" style="max-width:200px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select></div>'
+  +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الامتحان</th><th>التاريخ</th><th>الدرجة</th><th>النسبة</th><th>التقييم</th><th>الإجراءات</th></tr></thead><tbody id="exTbody"></tbody></table></div></div>'
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري للامتحانات</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>عدد الامتحانات</th><th>متوسط الدرجات</th><th>أعلى درجة</th><th>أدنى درجة</th></tr></thead><tbody id="exMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addExamBtn').onclick=function(){openAddExamModal();};
   ['exSearch','exGrade'].forEach(function(id){var el=document.getElementById(id);if(el){el.oninput=renderExamRows;el.onchange=renderExamRows;}});
+  ['exMonth','exYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderExamRows();renderMonthlyExams();};}});
   renderExamRows();
+  renderMonthlyExams();
 }
 function evalGrade(pct){if(pct>=90)return{label:'ممتاز',cls:'badge-green'};if(pct>=75)return{label:'جيد جداً',cls:'badge-blue'};if(pct>=60)return{label:'جيد',cls:'badge-yellow'};return{label:'يحتاج تحسين',cls:'badge-red'};}
 function renderExamRows(){
   var tbody=document.getElementById('exTbody');if(!tbody)return;
   var q=(document.getElementById('exSearch')?document.getElementById('exSearch').value:'').toLowerCase();
   var g=document.getElementById('exGrade')?document.getElementById('exGrade').value:'';
+  var monthIndex=document.getElementById('exMonth')?document.getElementById('exMonth').value:'';
+  var year=document.getElementById('exYear')?document.getElementById('exYear').value:'2026';
   var students=load('students');
-  var all=load('exams').filter(function(e){var stu=students.find(function(s){return s.id===e.studentId;});var nm=stu?stu.name.toLowerCase():'';return(!q||nm.includes(q)||e.title.toLowerCase().includes(q))&&(!g||stu&&stu.grade===g);});
+  var all=load('exams');
+  if(monthIndex!==''){
+    var monthStart=getMonthStart(year, parseInt(monthIndex));
+    var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+    all=all.filter(function(e){return e.date>=monthStart&&e.date<=monthEnd;});
+  }
+  all=all.filter(function(e){var stu=students.find(function(s){return s.id===e.studentId;});var nm=stu?stu.name.toLowerCase():'';return(!q||nm.includes(q)||e.title.toLowerCase().includes(q))&&(!g||stu&&stu.grade===g);});
   if(!all.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد نتائج امتحانات.</td></tr>';return;}
   tbody.innerHTML=all.map(function(e){var pct=Math.round((e.score/e.maxScore)*100);var ev=evalGrade(pct);return '<tr><td>'+esc(getStudentName(e.studentId))+'</td><td>'+esc(e.title)+'</td><td>'+fmtDate(e.date)+'</td><td>'+e.score+'/'+e.maxScore+'</td><td>'+pct+'%</td><td><span class="badge '+ev.cls+'">'+ev.label+'</span></td><td><div class="actions-cell"><button class="act-btn act-btn-edit" data-id="'+e.id+'">تعديل</button><button class="act-btn act-btn-delete" data-id="'+e.id+'">حذف</button></div></td></tr>';}).join('');
   tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditExamModal(b.dataset.id);};});
-  tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذه النتيجة؟',function(){save('exams',load('exams').filter(function(e){return e.id!==b.dataset.id;}));showToast('تم حذف النتيجة','error');renderExamRows();});};});
+  tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذه النتيجة؟',function(){save('exams',load('exams').filter(function(e){return e.id!==b.dataset.id;}));showToast('تم حذف النتيجة','error');renderExamRows();renderMonthlyExams();});};});
 }
 function examFormHtml(e){var students=load('students');return '<div class="form-group"><label class="form-label">الطالب *</label><select class="form-select" name="studentId"><option value="">اختر الطالب</option>'+students.map(function(s){return '<option value="'+s.id+'"'+(e.studentId===s.id?' selected':'')+'>'+esc(s.name)+' — '+esc(s.grade)+'</option>';}).join('')+'</select></div><div class="form-group"><label class="form-label">اسم الامتحان *</label><input class="form-input" name="title" value="'+esc(e.title||'')+'"/></div><div class="form-group"><label class="form-label">التاريخ</label><input class="form-input" type="date" name="date" value="'+(e.date||today())+'"/></div><div class="form-group"><label class="form-label">الدرجة النهائية</label><input class="form-input" type="number" name="maxScore" min="1" value="'+(e.maxScore||20)+'"/></div><div class="form-group"><label class="form-label">درجة الطالب</label><input class="form-input" type="number" name="score" min="0" value="'+(e.score||0)+'"/></div><div class="form-group"><label class="form-label">ملاحظات</label><textarea class="form-textarea" name="note">'+esc(e.note||'')+'</textarea></div>';}
 function openAddExamModal(){openModal('<div class="modal-header"><h3>إضافة نتيجة امتحان</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="exForm">'+examFormHtml({})+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="exSaveBtn">حفظ النتيجة</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');document.getElementById('exSaveBtn').onclick=function(){saveExam(null);};}
 function openEditExamModal(id){var e=load('exams').find(function(x){return x.id===id;});if(!e)return;openModal('<div class="modal-header"><h3>تعديل نتيجة امتحان</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="exForm">'+examFormHtml(e)+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="exSaveBtn">حفظ التغييرات</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');document.getElementById('exSaveBtn').onclick=function(){saveExam(id);};}
-function saveExam(id){var f=document.getElementById('exForm');var d=Object.fromEntries(new FormData(f));if(!d.studentId){showToast('من فضلك اختر الطالب.','error');return;}if(!d.title.trim()){showToast('من فضلك أدخل اسم الامتحان.','error');return;}d.maxScore=Number(d.maxScore);d.score=Number(d.score);if(d.score<0){showToast('درجة الطالب لا يمكن أن تكون سالبة.','error');return;}if(d.score>d.maxScore){showToast('درجة الطالب لا يمكن أن تكون أكبر من الدرجة النهائية.','error');return;}var exams=load('exams');if(id){var i=exams.findIndex(function(x){return x.id===id;});exams[i]=Object.assign({},exams[i],d);}else exams.push(Object.assign({id:genId()},d));save('exams',exams);logActivity(getStudentName(d.studentId),id?'تم تعديل نتيجة امتحان':'تم تسجيل نتيجة امتحان');showToast(id?'تم تحديث النتيجة':'تم حفظ نتيجة الامتحان');closeModal();renderExamRows();}
+function saveExam(id){var f=document.getElementById('exForm');var d=Object.fromEntries(new FormData(f));if(!d.studentId){showToast('من فضلك اختر الطالب.','error');return;}if(!d.title.trim()){showToast('من فضلك أدخل اسم الامتحان.','error');return;}d.maxScore=Number(d.maxScore);d.score=Number(d.score);if(d.score<0){showToast('درجة الطالب لا يمكن أن تكون سالبة.','error');return;}if(d.score>d.maxScore){showToast('درجة الطالب لا يمكن أن تكون أكبر من الدرجة النهائية.','error');return;}var exams=load('exams');if(id){var i=exams.findIndex(function(x){return x.id===id;});exams[i]=Object.assign({},exams[i],d);}else exams.push(Object.assign({id:genId()},d));save('exams',exams);logActivity(getStudentName(d.studentId),id?'تم تعديل نتيجة امتحان':'تم تسجيل نتيجة امتحان');showToast(id?'تم تحديث النتيجة':'تم حفظ نتيجة الامتحان');closeModal();renderExamRows();renderMonthlyExams();}
+function renderMonthlyExams(){
+  var tbody=document.getElementById('exMonthlyTable');if(!tbody)return;
+  var monthIndex=document.getElementById('exMonth')?document.getElementById('exMonth').value:'';
+  var year=document.getElementById('exYear')?document.getElementById('exYear').value:'2026';
+  var g=document.getElementById('exGrade')?document.getElementById('exGrade').value:'';
+  var q=(document.getElementById('exSearch')?document.getElementById('exSearch').value:'').toLowerCase();
+  var students=load('students').filter(function(s){return(!g||s.grade===g)&&(!q||s.name.toLowerCase().includes(q));});
+  var allExams=load('exams');
+  if(monthIndex!==''){
+    var monthStart=getMonthStart(year, parseInt(monthIndex));
+    var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+    allExams=allExams.filter(function(e){return e.date>=monthStart&&e.date<=monthEnd;});
+  }
+  if(!students.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات.</td></tr>';return;}
+  tbody.innerHTML=students.map(function(s){
+    var studentExams=allExams.filter(function(e){return e.studentId===s.id;});
+    var count=studentExams.length;
+    if(count===0){
+      return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td>0</td><td>—</td><td>—</td><td>—</td></tr>';
+    }
+    var avgPct=studentExams.reduce(function(sum,e){return sum+(e.score/e.maxScore)*100;},0)/count;
+    var scores=studentExams.map(function(e){return e.score;});
+    var maxScore=Math.max.apply(null,scores);
+    var minScore=Math.min.apply(null,scores);
+    var avgColor=avgPct>=75?'badge-green':avgPct>=50?'badge-yellow':'badge-red';
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td>'+count+'</td><td><span class="badge '+avgColor+'">'+Math.round(avgPct)+'%</span></td><td>'+maxScore+'</td><td>'+minScore+'</td></tr>';
+  }).join('');
+}
 
 
 // ATTENDANCE
 function renderAttendance(){
   var sec=document.getElementById('attendanceSection');
+  var currentYear=new Date().getFullYear();
+  var currentMonth=new Date().getMonth();
   sec.innerHTML='<div class="section-header"><h2>الحضور والغياب</h2></div>'
-  +'<div class="table-card"><div class="attend-toolbar"><div class="form-group" style="margin:0"><label class="form-label">التاريخ</label><input type="date" class="form-input" id="attDate" value="'+today()+'" style="max-width:180px"/></div><div class="form-group" style="margin:0"><label class="form-label">الصف</label><select class="form-select" id="attGrade" style="max-width:220px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select></div><div class="form-group" style="margin:0"><label class="form-label">بحث</label><input type="text" class="form-input" id="attSearch" placeholder="اسم الطالب..." style="max-width:180px"/></div></div>'
+  +'<div class="table-card"><div class="attend-toolbar"><div class="form-group" style="margin:0"><label class="form-label">التاريخ</label><input type="date" class="form-input" id="attDate" value="'+today()+'" style="max-width:180px"/></div><div class="form-group" style="margin:0"><label class="form-label">الشهر</label><select class="form-select" id="attMonth" style="max-width:160px"><option value="">— الكل —</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+(i===currentMonth?' selected':'')+'>'+m+'</option>';}).join('')+'</select></div><div class="form-group" style="margin:0"><label class="form-label">السنة</label><select class="form-select" id="attYear" style="max-width:120px"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select></div><div class="form-group" style="margin:0"><label class="form-label">الصف</label><select class="form-select" id="attGrade" style="max-width:220px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select></div><div class="form-group" style="margin:0"><label class="form-label">بحث</label><input type="text" class="form-input" id="attSearch" placeholder="اسم الطالب..." style="max-width:180px"/></div></div>'
   +'<div id="attendList"></div><div style="padding:1rem;border-top:1px solid var(--clr-border);display:flex;justify-content:flex-end"><button class="btn btn-accent" id="saveAttBtn">حفظ الحضور</button></div></div>'
-  +'<div class="stats-grid" id="attStats" style="margin-top:1rem"></div>';
+  +'<div class="stats-grid" id="attStats" style="margin-top:1rem"></div>'
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري للحضور</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>أيام الحضور</th><th>أيام الغياب</th><th>أيام التأخر</th><th>نسبة الحضور</th></tr></thead><tbody id="attMonthlyTable"></tbody></table></div></div>';
   ['attDate','attGrade','attSearch'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=renderAttList;el.oninput=renderAttList;}});
+  ['attMonth','attYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderAttList();renderMonthlyAttendance();};}});
   document.getElementById('saveAttBtn').onclick=saveAttendance;
   renderAttList();
+  renderMonthlyAttendance();
 }
 function renderAttList(){
   var container=document.getElementById('attendList');if(!container)return;
   var d=document.getElementById('attDate')?document.getElementById('attDate').value:today();
   var g=document.getElementById('attGrade')?document.getElementById('attGrade').value:'';
   var q=(document.getElementById('attSearch')?document.getElementById('attSearch').value:'').toLowerCase();
+  var monthIndex=document.getElementById('attMonth')?document.getElementById('attMonth').value:'';
+  var year=document.getElementById('attYear')?document.getElementById('attYear').value:'2026';
   var students=load('students').filter(function(s){return(!g||s.grade===g)&&(!q||s.name.toLowerCase().includes(q));});
-  var existing=load('attendance').filter(function(a){return a.date===d;});
+  var allAttendance=load('attendance');
+  var existing=allAttendance.filter(function(a){return a.date===d;});
   container.innerHTML=students.map(function(s){var rec=existing.find(function(a){return a.studentId===s.id;});var status=rec?rec.status:'حاضر';return '<div class="attend-row"><span class="attend-name">'+esc(s.name)+' — <span style="font-size:.8rem;color:var(--clr-muted)">'+esc(s.grade)+'</span></span><div class="attend-radios">'+['حاضر','غائب','متأخر'].map(function(st){return '<label class="attend-radio"><input type="radio" name="att_'+s.id+'" value="'+st+'"'+(status===st?' checked':'')+'/><span class="badge '+(st==='حاضر'?'badge-green':st==='متأخر'?'badge-yellow':'badge-red')+'">'+st+'</span></label>';}).join('')+'</div></div>';}).join('')||'<div style="padding:1.5rem;text-align:center;color:var(--clr-muted)">لا توجد طلاب.</div>';
-  renderAttStats(d);
+  renderAttStats(d, monthIndex, year);
+  renderMonthlyAttendance();
 }
-function renderAttStats(d){
+function renderAttStats(d, monthIndex, year){
   var container=document.getElementById('attStats');if(!container)return;
-  var recs=load('attendance').filter(function(a){return a.date===d;});
+  var recs=load('attendance');
+  if(monthIndex!==''){
+    var monthStart=getMonthStart(year, parseInt(monthIndex));
+    var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+    recs=recs.filter(function(a){return a.date>=monthStart&&a.date<=monthEnd;});
+  }else{
+    recs=recs.filter(function(a){return a.date===d;});
+  }
   var present=recs.filter(function(a){return a.status==='حاضر';}).length;
   var absent=recs.filter(function(a){return a.status==='غائب';}).length;
   var late=recs.filter(function(a){return a.status==='متأخر';}).length;
@@ -575,37 +808,95 @@ function saveAttendance(){
   var students=load('students').filter(function(s){return(!g||s.grade===g)&&(!q||s.name.toLowerCase().includes(q));});
   var att=load('attendance').filter(function(a){return!(a.date===d&&students.some(function(s){return s.id===a.studentId;}));});
   students.forEach(function(s){var radios=document.querySelectorAll('input[name="att_'+s.id+'"]');var checked=Array.from(radios).find(function(r){return r.checked;});if(checked)att.push({id:genId(),studentId:s.id,date:d,status:checked.value});});
-  save('attendance',att);logActivity('المجموعة','تم تسجيل الحضور');showToast('تم تسجيل الحضور بنجاح');renderAttStats(d);updateNotifications();
+  save('attendance',att);logActivity('المجموعة','تم تسجيل الحضور');showToast('تم تسجيل الحضور بنجاح');renderAttStats(d, document.getElementById('attMonth').value, document.getElementById('attYear').value);renderMonthlyAttendance();updateNotifications();
+}
+function renderMonthlyAttendance(){
+  var tbody=document.getElementById('attMonthlyTable');if(!tbody)return;
+  var monthIndex=document.getElementById('attMonth')?document.getElementById('attMonth').value:'';
+  var year=document.getElementById('attYear')?document.getElementById('attYear').value:'2026';
+  var g=document.getElementById('attGrade')?document.getElementById('attGrade').value:'';
+  var q=(document.getElementById('attSearch')?document.getElementById('attSearch').value:'').toLowerCase();
+  var students=load('students').filter(function(s){return(!g||s.grade===g)&&(!q||s.name.toLowerCase().includes(q));});
+  var allAttendance=load('attendance');
+  if(monthIndex!==''){
+    var monthStart=getMonthStart(year, parseInt(monthIndex));
+    var monthEnd=getMonthEnd(year, parseInt(monthIndex));
+    allAttendance=allAttendance.filter(function(a){return a.date>=monthStart&&a.date<=monthEnd;});
+  }
+  if(!students.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات.</td></tr>';return;}
+  tbody.innerHTML=students.map(function(s){
+    var studentAtt=allAttendance.filter(function(a){return a.studentId===s.id;});
+    var present=studentAtt.filter(function(a){return a.status==='حاضر';}).length;
+    var absent=studentAtt.filter(function(a){return a.status==='غائب';}).length;
+    var late=studentAtt.filter(function(a){return a.status==='متأخر';}).length;
+    var total=present+absent+late;
+    var rate=total?Math.round((present+late)/total*100):0;
+    var rateColor=rate>=75?'badge-green':rate>=50?'badge-yellow':'badge-red';
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td>'+present+'</td><td>'+absent+'</td><td>'+late+'</td><td><span class="badge '+rateColor+'">'+rate+'%</span></td></tr>';
+  }).join('');
 }
 
 // PAYMENTS
 function renderPayments(){
   var sec=document.getElementById('paymentsSection');
+  var currentYear=new Date().getFullYear();
+  var currentMonth=new Date().getMonth();
   var payments=load('payments');
   var totalPaid=payments.reduce(function(s,p){return s+p.paid;},0);
   var totalDue=payments.reduce(function(s,p){return s+(p.remaining||0);},0);
   var lateCount=payments.filter(function(p){return p.remaining>0;}).length;
   sec.innerHTML='<div class="section-header"><h2>مصاريف الدروس</h2><button class="btn btn-accent" id="addPayBtn">+ تسجيل دفعة</button></div>'
   +'<div class="stats-grid"><div class="stat-card"><div class="stat-num">'+totalPaid.toLocaleString('ar-EG')+' ج</div><div class="stat-lbl">إجمالي المدفوع</div></div><div class="stat-card"><div class="stat-num">'+totalDue.toLocaleString('ar-EG')+' ج</div><div class="stat-lbl">إجمالي المتبقي</div></div><div class="stat-card"><div class="stat-num">'+lateCount+'</div><div class="stat-lbl">لديهم مبالغ متبقية</div></div></div>'
-  +'<div class="table-card"><div class="table-toolbar"><input type="text" class="form-input" id="paySearch" placeholder="بحث باسم الطالب..." style="max-width:220px"/></div>'
-  +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الشهر</th><th>الاشتراك</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>تاريخ الدفع</th><th>الإجراءات</th></tr></thead><tbody id="payTbody"></tbody></table></div></div>';
+  +'<div class="table-card"><div class="table-toolbar"><input type="text" class="form-input" id="paySearch" placeholder="بحث باسم الطالب..." style="max-width:220px"/><select class="form-select" id="payMonth" style="max-width:160px"><option value="">— الكل —</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+(i===currentMonth?' selected':'')+'>'+m+'</option>';}).join('')+'</select><select class="form-select" id="payYear" style="max-width:120px"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select></div>'
+  +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الشهر</th><th>الاشتراك</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>تاريخ الدفع</th><th>الإجراءات</th></tr></thead><tbody id="payTbody"></tbody></table></div></div>'
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري للمدفوعات</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>المبلغ المدفوع</th><th>المبلغ المتبقي</th><th>الحالة</th></tr></thead><tbody id="payMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addPayBtn').onclick=function(){openAddPaymentModal();};
   document.getElementById('paySearch').oninput=renderPayRows;
+  ['payMonth','payYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderPayRows();renderMonthlyPayments();};}});
   renderPayRows();
+  renderMonthlyPayments();
 }
 function renderPayRows(){
   var tbody=document.getElementById('payTbody');if(!tbody)return;
   var q=(document.getElementById('paySearch')?document.getElementById('paySearch').value:'').toLowerCase();
-  var all=load('payments').filter(function(p){return!q||getStudentName(p.studentId).toLowerCase().includes(q);});
+  var monthIndex=document.getElementById('payMonth')?document.getElementById('payMonth').value:'';
+  var year=document.getElementById('payYear')?document.getElementById('payYear').value:'2026';
+  var all=load('payments');
+  if(monthIndex!==''){
+    var monthName=MONTHS[parseInt(monthIndex)];
+    all=all.filter(function(p){return p.month.includes(monthName)&&p.month.includes(year);});
+  }
+  all=all.filter(function(p){return!q||getStudentName(p.studentId).toLowerCase().includes(q);});
   if(!all.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد دفعات.</td></tr>';return;}
   tbody.innerHTML=all.map(function(p){var ps=paymentStatus(p);return '<tr><td style="font-weight:600">'+esc(getStudentName(p.studentId))+'</td><td>'+esc(p.month)+'</td><td>'+p.total+' ج</td><td>'+p.paid+' ج</td><td>'+p.remaining+' ج</td><td><span class="badge '+ps.cls+'">'+ps.label+'</span></td><td>'+(p.date?fmtDate(p.date):'—')+'</td><td><div class="actions-cell"><button class="act-btn act-btn-edit" data-id="'+p.id+'">تعديل</button><button class="act-btn act-btn-delete" data-id="'+p.id+'">حذف</button></div></td></tr>';}).join('');
   tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditPaymentModal(b.dataset.id);};});
-  tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذه الدفعة؟',function(){save('payments',load('payments').filter(function(p){return p.id!==b.dataset.id;}));showToast('تم حذف الدفعة','error');renderPayRows();updateNotifications();});};});
+  tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذه الدفعة؟',function(){save('payments',load('payments').filter(function(p){return p.id!==b.dataset.id;}));showToast('تم حذف الدفعة','error');renderPayRows();renderMonthlyPayments();updateNotifications();});};});
 }
 function payFormHtml(p){var students=load('students');return '<div class="form-group"><label class="form-label">الطالب *</label><select class="form-select" name="studentId"><option value="">اختر الطالب</option>'+students.map(function(s){return '<option value="'+s.id+'"'+(p.studentId===s.id?' selected':'')+'>'+esc(s.name)+'</option>';}).join('')+'</select></div><div class="form-group"><label class="form-label">الشهر *</label><input class="form-input" name="month" value="'+esc(p.month||'')+'"/></div><div class="form-group"><label class="form-label">قيمة الاشتراك</label><input class="form-input" type="number" name="total" min="0" value="'+(p.total||300)+'"/></div><div class="form-group"><label class="form-label">المبلغ المدفوع</label><input class="form-input" type="number" name="paid" min="0" value="'+(p.paid||0)+'"/></div><div class="form-group"><label class="form-label">تاريخ الدفع</label><input class="form-input" type="date" name="date" value="'+(p.date||today())+'"/></div><div class="form-group"><label class="form-label">ملاحظة</label><input class="form-input" name="note" value="'+esc(p.note||'')+'"/></div>';}
 function openAddPaymentModal(){openModal('<div class="modal-header"><h3>تسجيل دفعة</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="payForm">'+payFormHtml({})+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="paySaveBtn">تسجيل الدفعة</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');document.getElementById('paySaveBtn').onclick=function(){savePayment(null);};}
 function openEditPaymentModal(id){var p=load('payments').find(function(x){return x.id===id;});if(!p)return;openModal('<div class="modal-header"><h3>تعديل الدفعة</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="payForm">'+payFormHtml(p)+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="paySaveBtn">حفظ التغييرات</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');document.getElementById('paySaveBtn').onclick=function(){savePayment(id);};}
-function savePayment(id){var f=document.getElementById('payForm');var d=Object.fromEntries(new FormData(f));if(!d.studentId){showToast('من فضلك اختر الطالب.','error');return;}if(!d.month.trim()){showToast('من فضلك أدخل الشهر.','error');return;}d.total=Number(d.total);d.paid=Number(d.paid);if(d.paid<0){showToast('المبلغ المدفوع لا يمكن أن يكون سالبًا.','error');return;}if(d.paid>d.total){showToast('المبلغ المدفوع أكبر من قيمة الاشتراك.','error');return;}d.remaining=d.total-d.paid;var pays=load('payments');if(id){var i=pays.findIndex(function(x){return x.id===id;});pays[i]=Object.assign({},pays[i],d);}else pays.push(Object.assign({id:genId()},d));save('payments',pays);logActivity(getStudentName(d.studentId),id?'تم تعديل دفعة':'تم تسجيل دفعة');showToast(id?'تم تحديث الدفعة':'تم تسجيل الدفعة بنجاح');closeModal();renderPayRows();updateNotifications();}
+function savePayment(id){var f=document.getElementById('payForm');var d=Object.fromEntries(new FormData(f));if(!d.studentId){showToast('من فضلك اختر الطالب.','error');return;}if(!d.month.trim()){showToast('من فضلك أدخل الشهر.','error');return;}d.total=Number(d.total);d.paid=Number(d.paid);if(d.paid<0){showToast('المبلغ المدفوع لا يمكن أن يكون سالبًا.','error');return;}if(d.paid>d.total){showToast('المبلغ المدفوع أكبر من قيمة الاشتراك.','error');return;}d.remaining=d.total-d.paid;var pays=load('payments');if(id){var i=pays.findIndex(function(x){return x.id===id;});pays[i]=Object.assign({},pays[i],d);}else pays.push(Object.assign({id:genId()},d));save('payments',pays);logActivity(getStudentName(d.studentId),id?'تم تعديل دفعة':'تم تسجيل دفعة');showToast(id?'تم تحديث الدفعة':'تم تسجيل الدفعة بنجاح');closeModal();renderPayRows();renderMonthlyPayments();updateNotifications();}
+function renderMonthlyPayments(){
+  var tbody=document.getElementById('payMonthlyTable');if(!tbody)return;
+  var monthIndex=document.getElementById('payMonth')?document.getElementById('payMonth').value:'';
+  var year=document.getElementById('payYear')?document.getElementById('payYear').value:'2026';
+  var q=(document.getElementById('paySearch')?document.getElementById('paySearch').value:'').toLowerCase();
+  var students=load('students').filter(function(s){return!q||s.name.toLowerCase().includes(q);});
+  var allPayments=load('payments');
+  if(monthIndex!==''){
+    var monthName=MONTHS[parseInt(monthIndex)];
+    allPayments=allPayments.filter(function(p){return p.month.includes(monthName)&&p.month.includes(year);});
+  }
+  if(!students.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات.</td></tr>';return;}
+  tbody.innerHTML=students.map(function(s){
+    var studentPayments=allPayments.filter(function(p){return p.studentId===s.id;});
+    var totalPaid=studentPayments.reduce(function(sum,p){return sum+p.paid;},0);
+    var totalRemaining=studentPayments.reduce(function(sum,p){return sum+(p.remaining||0);},0);
+    var status=totalRemaining===0?'مدفوع بالكامل':totalPaid===0?'لم يتم الدفع':'جزئي';
+    var statusColor=status==='مدفوع بالكامل'?'badge-green':status==='لم يتم الدفع'?'badge-red':'badge-yellow';
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td>'+totalPaid+' ج</td><td>'+totalRemaining+' ج</td><td><span class="badge '+statusColor+'">'+status+'</span></td></tr>';
+  }).join('');
+}
 
 
 // NOTES
