@@ -2,7 +2,7 @@
   "name": "teacher-dashboard-backend",
   "version": "1.0.0",
   "description": "Node.js backend for Nada Teacher Dashboard with Supabase",
-  "main": "server_improved.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",

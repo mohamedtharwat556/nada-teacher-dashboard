@@ -488,9 +488,9 @@ app.listen(PORT, () => {
     console.log('=================================');
     console.log(`🚀 Server is running at http://localhost:${PORT}`);
     console.log('=================================');
-    console.log('📱 Teacher Dashboard: http://localhost:3000/dashboard.html');
-    console.log('👨‍👩‍👧 Parent Portal:   http://localhost:3000/index.html');
-    console.log('❤️ Health Check:     http://localhost:3000/api/health');
+    console.log(`📱 Teacher Dashboard: http://localhost:${PORT}/dashboard.html`);
+    console.log(`👨‍👩‍👧 Parent Portal:   http://localhost:${PORT}/index.html`);
+    console.log(`❤️ Health Check:     http://localhost:${PORT}/api/health`);
     console.log('=================================');
     
     if (!supabase) {
