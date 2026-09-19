@@ -413,12 +413,71 @@ body{background:var(--clr-bg);color:var(--clr-text);display:flex;min-height:100v
   .hamburger-btn{display:flex}
   .global-search{width:160px}
 }
+@media(max-width:768px){
+  .table-card{overflow-x:auto}
+  .data-table{min-width:600px}
+  .section-header{flex-direction:column;align-items:flex-start;gap:.8rem}
+  .section-header button{width:100%}
+  .table-toolbar{flex-direction:column;align-items:flex-start;gap:.6rem}
+  .table-toolbar input,.table-toolbar select{width:100%}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .overview-grid{grid-template-columns:repeat(2,1fr)}
+}
 @media(max-width:640px){
-  .main-content{padding:.9rem}
+  .main-content{padding:.7rem}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .global-search{width:110px}
   .header-profile .header-profile-info{display:none}
   .modal-box{max-width:100%;margin:.5rem}
   .section-header{flex-direction:column;align-items:flex-start}
   .table-toolbar{flex-direction:column;align-items:flex-start}
+  .sidebar{width:280px}
+  .sidebar-header{padding:1.2rem .8rem}
+  .stat-card{padding:.8rem}
+  .stat-num{font-size:1.4rem}
+  .stat-lbl{font-size:.75rem}
+  .table-card{padding:.6rem}
+  .data-table th,.data-table td{padding:.6rem .4rem;font-size:.85rem}
+  .form-group{margin-bottom:.8rem}
+  .form-label{font-size:.85rem}
+  .form-input,.form-select{padding:.6rem;font-size:.9rem}
+  .btn{padding:.5rem 1rem;font-size:.9rem}
+  .modal-body{padding:1rem}
+  .modal-footer{flex-direction:column;gap:.5rem}
+  .modal-footer button{width:100%}
+}
+@media(max-width:480px){
+  .main-content{padding:.5rem}
+  .header{padding:.8rem .5rem}
+  .header-avatar{width:32px;height:32px;font-size:1rem}
+  .stats-grid{grid-template-columns:1fr}
+  .overview-grid{grid-template-columns:1fr}
+  .table-card{margin:.5rem 0}
+  .section-header h2{font-size:1.2rem}
+  .data-table{min-width:500px;font-size:.8rem}
+  .data-table th,.data-table td{padding:.5rem .3rem}
+  .badge{font-size:.7rem;padding:.2rem .4rem}
+  .act-btn{padding:.3rem .6rem;font-size:.75rem}
+  .sidebar{width:100%;max-width:300px}
+  .global-search{display:none}
+  .hamburger-btn{margin-right:auto}
+  .header-actions{gap:.3rem}
+  .toast{font-size:.85rem;padding:.6rem 1rem}
+}
+/* iPhone specific adjustments */
+@media(max-width:390px){
+  .data-table{min-width:450px}
+  .section-header button{font-size:.85rem;padding:.4rem .8rem}
+  .table-toolbar select{font-size:.85rem}
+  .modal-box{margin:.3rem}
+  .modal-header h3{font-size:1.1rem}
+  .form-input,.form-select{font-size:.85rem}
+}
+@media(max-width:375px){
+  .data-table{min-width:400px}
+  .stats-grid{grid-template-columns:1fr}
+  .overview-grid{grid-template-columns:1fr}
+  .table-card{padding:.4rem}
+  .data-table th,.data-table td{padding:.4rem .2rem;font-size:.75rem}
+  .badge{font-size:.65rem;padding:.15rem .35rem}
 }

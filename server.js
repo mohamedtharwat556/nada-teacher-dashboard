@@ -675,7 +675,7 @@ app.delete('/api/clear/store', async (req, res) => {
 });
 
 // Serve static files after API routes to avoid conflicts
-app.use(express.static(path.join(__dirname))); // Serve static files from current directory
+app.use(express.static(path.join(__dirname))); // Serve static files from current directory (will serve from css/, js/, assets/ folders)
 
 // 404 handler
 app.use((req, res) => {
