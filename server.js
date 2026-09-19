@@ -326,6 +326,116 @@ app.get('/api/student-monthly-data', async (req, res) => {
     }
 });
 
+// GET student monthly data (dedicated endpoint)
+app.get('/api/student-monthly-data', async (req, res) => {
+    if (!supabase) {
+        console.error('❌ Supabase not configured');
+        return res.status(500).json({ 
+            error: 'Supabase not configured',
+            message: 'Please check your .env file for SUPABASE_URL and SUPABASE_ANON_KEY'
+        });
+    }
+
+    try {
+        console.log('📖 Fetching student monthly data from Supabase...');
+        const { data, error } = await supabase.from('student_monthly_data').select('*');
+        
+        if (error) {
+            console.error('❌ Supabase monthly data query error:', error);
+            throw error;
+        }
+        
+        // Convert snake_case to camelCase for frontend compatibility
+        const monthlyData = data.map(row => ({
+            id: row.id,
+            studentId: row.student_id,
+            monthIndex: row.month_index,
+            year: row.year,
+            attendanceRate: row.attendance_rate,
+            homeworkCompleted: row.homework_completed,
+            examAvg: row.exam_avg,
+            paymentStatus: row.payment_status,
+            status: row.status,
+            generalNotes: row.general_notes,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        }));
+        
+        console.log('✅ Monthly data fetched successfully:', monthlyData.length);
+        res.json(monthlyData);
+    } catch (err) {
+        console.error('❌ Error reading monthly data from Supabase:', err.message);
+        res.status(500).json({ 
+            error: 'Database read error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+});
+
+// POST student monthly data (dedicated endpoint)
+app.post('/api/student-monthly-data', async (req, res) => {
+    if (!supabase) {
+        console.error('❌ Supabase not configured');
+        return res.status(500).json({ 
+            error: 'Supabase not configured',
+            message: 'Please check your .env file for SUPABASE_URL and SUPABASE_ANON_KEY'
+        });
+    }
+
+    try {
+        const updates = req.body;
+        
+        if (!updates || typeof updates !== 'object') {
+            return res.status(400).json({ 
+                error: 'Invalid request body',
+                message: 'Request body must be a JSON object'
+            });
+        }
+
+        console.log('💾 Saving monthly data to Supabase:', Object.keys(updates));
+        
+        // Handle student monthly data
+        if (updates.studentMonthlyData) {
+            const monthlyData = updates.studentMonthlyData;
+            
+            // Convert camelCase to snake_case for Supabase
+            const snakeCaseData = monthlyData.map(row => ({
+                id: row.id || require('crypto').randomUUID(), // Generate UUID if not provided
+                student_id: row.studentId,
+                month_index: row.monthIndex,
+                year: row.year,
+                attendance_rate: row.attendanceRate,
+                homework_completed: row.homeworkCompleted,
+                exam_avg: row.examAvg,
+                payment_status: row.paymentStatus,
+                status: row.status,
+                general_notes: row.generalNotes
+            }));
+            
+            const { error } = await supabase.from('student_monthly_data').upsert(snakeCaseData, { onConflict: 'student_id,month_index,year' });
+            
+            if (error) {
+                console.error('❌ Supabase monthly data upsert error:', error);
+                throw error;
+            }
+            
+            console.log('✅ Student monthly data saved successfully');
+            res.status(200).json({ success: true, message: 'Monthly data saved successfully' });
+            return;
+        }
+
+        res.status(400).json({ error: 'Invalid data format' });
+    } catch (err) {
+        console.error('❌ Error writing monthly data to Supabase:', err.message);
+        res.status(500).json({ 
+            error: 'Database write error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+});
+
 // GET all data from Supabase
 app.get('/api/data', async (req, res) => {
     if (!supabase) {
@@ -419,7 +529,7 @@ app.post('/api/data', async (req, res) => {
             
             // Convert camelCase to snake_case for Supabase
             const snakeCaseData = monthlyData.map(row => ({
-                id: row.id,
+                id: row.id || require('crypto').randomUUID(), // Generate UUID if not provided
                 student_id: row.studentId,
                 month_index: row.monthIndex,
                 year: row.year,

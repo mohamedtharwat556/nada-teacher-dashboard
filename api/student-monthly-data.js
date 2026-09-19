@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { randomUUID } = require('crypto');
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -104,7 +105,7 @@ module.exports = async function handler(req, res) {
                 
                 // Convert camelCase to snake_case for Supabase
                 const snakeCaseData = monthlyData.map(row => ({
-                    id: row.id,
+                    id: row.id || randomUUID(), // Generate UUID if not provided
                     student_id: row.studentId,
                     month_index: row.monthIndex,
                     year: row.year,
