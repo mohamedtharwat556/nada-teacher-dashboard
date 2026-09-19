@@ -335,10 +335,10 @@ function renderSearchResults(results, query, month) {
   const cards = results.map(s => {
     const initials = getInitials(s.name);
     const teacherLabel = s.teacher || selectedTeacher;
-    // Show the selected month from search, not the student's current month
-    const selectedMonthIndex = parseInt(month) || new Date().getMonth();
-    const selectedYear = new Date().getFullYear();
-    const monthDisplay = MONTHS[selectedMonthIndex] + ' ' + selectedYear;
+    // Show the student's current month from their data, not the search filter
+    const studentMonthIndex = s.currentMonth !== undefined ? s.currentMonth : new Date().getMonth();
+    const studentYear = s.currentYear || new Date().getFullYear();
+    const monthDisplay = MONTHS[studentMonthIndex] + ' ' + studentYear;
     
     return `
       <div class="result-card reveal" data-student-id="${s.id}" role="button" tabindex="0" aria-label="عرض ملف ${s.name}">
