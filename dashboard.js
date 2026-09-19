@@ -598,12 +598,16 @@ function openAddStudentModal(){
         
         // Also save to Supabase
         try {
-          await fetch('/api/student-monthly-data', {
+          const supabaseRes = await fetch('/api/student-monthly-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ studentMonthlyData: allMonthlyData })
           });
-          console.log('Monthly data saved to Supabase');
+          if (supabaseRes.ok) {
+            console.log('Monthly data saved to Supabase successfully');
+          } else {
+            console.warn('Supabase save failed:', supabaseRes.status);
+          }
         } catch(e) {
           console.warn('Could not save monthly data to Supabase:', e);
         }
@@ -762,12 +766,16 @@ function openEditStudentModal(id){
         
         // Also save to Supabase
         try {
-          await fetch('/api/student-monthly-data', {
+          const supabaseRes = await fetch('/api/student-monthly-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ studentMonthlyData: allMonthlyData })
           });
-          console.log('Monthly data saved to Supabase');
+          if (supabaseRes.ok) {
+            console.log('Monthly data saved to Supabase successfully');
+          } else {
+            console.warn('Supabase save failed:', supabaseRes.status);
+          }
         } catch(e) {
           console.warn('Could not save monthly data to Supabase:', e);
         }

@@ -189,7 +189,7 @@ async function fetchStudents() {
         if (data.studentMonthlyData || data.nada_studentMonthlyData) {
           window.APP_DATA = window.APP_DATA || {};
           window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
-          console.log('📖 Monthly data loaded:', window.APP_DATA.studentMonthlyData.length);
+          console.log('📖 Monthly data loaded from legacy API:', window.APP_DATA.studentMonthlyData.length);
         }
         console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
       }
@@ -203,6 +203,8 @@ async function fetchStudents() {
         window.APP_DATA = window.APP_DATA || {};
         window.APP_DATA.studentMonthlyData = monthlyData;
         console.log('📖 Monthly data loaded from dedicated API:', monthlyData.length);
+      } else {
+        console.warn('Monthly data API returned error:', monthlyRes.status);
       }
     } catch(e) {
       console.warn('Could not load monthly data from dedicated API', e);
@@ -418,6 +420,7 @@ function renderStudentDashboard(student) {
     : [];
 
   console.log('Monthly data for student:', student.name, monthlyData);
+  console.log('All monthly data in system:', window.APP_DATA?.studentMonthlyData);
 
   // Sort monthly data by year and month (newest first)
   monthlyData.sort((a, b) => {
@@ -496,6 +499,7 @@ function renderStudentDashboard(student) {
     ${monthlyData.length > 0 ? `
       <div style="margin-top:2rem;">
         <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--clr-text);">السجل الشهري (${monthlyData.length} شهر)</h3>
+        <p style="font-size:0.9rem;color:var(--clr-muted);margin-bottom:1rem;">تطور مستوى الطالب خلال الأشهر المختلفة</p>
         ${monthlyCards}
       </div>
     ` : '<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);text-align:center;"><p style="color:var(--clr-muted);">لا توجد بيانات شهرية مسجلة لهذا الطالب بعد</p><button id="refreshDataBtn" style="margin-top:1rem;padding:0.5rem 1rem;background:var(--clr-accent);color:white;border:none;border-radius:4px;cursor:pointer;">تحديث البيانات</button></div>'}
