@@ -423,15 +423,15 @@ function renderStudents(){
   +'<select class="form-select" id="stuCenter" style="max-width:160px"><option value="">— المدرس / السنتر —</option>'+CENTERS.map(function(c){return '<option value="'+esc(c)+'">'+c+'</option>';}).join('')+'</select>'
   +'<select class="form-select" id="stuStatus" style="max-width:160px"><option value="">— الحالة —</option><option>منتظم</option><option>يحتاج متابعة</option></select>'
   +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الشهر الحالي</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>'
-  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري الشامل</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الحضور الشهري</th><th>الواجبات الشهرية</th><th>الامتحانات الشهرية</th><th>المدفوعات الشهرية</th><th>التقييم العام</th><th>الإجراءات</th></tr></thead><tbody id="stuMonthlyTable"></tbody></table></div></div>';
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">السجل الشهري الكامل</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الشهر</th><th>السنة</th><th>الحضور</th><th>الواجبات</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuAllMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addStuBtn').onclick=function(){openAddStudentModal();};
   document.getElementById('stuSearch').oninput=renderStudentRows;
   document.getElementById('stuGrade').onchange=renderStudentRows;
   document.getElementById('stuCenter').onchange=renderStudentRows;
   document.getElementById('stuStatus').onchange=renderStudentRows;
-  ['stuMonth','stuYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderStudentRows();renderMonthlyStudentEvaluation();};}});
+  ['stuMonth','stuYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderStudentRows();renderAllMonthlyData();};}});
   renderStudentRows();
-  renderMonthlyStudentEvaluation();
+  renderAllMonthlyData();
 }
 function renderStudentRows(){
   var tbody=document.getElementById('stuTbody');if(!tbody)return;
@@ -468,6 +468,65 @@ function renderStudentRows(){
   tbody.querySelectorAll('.act-btn-view').forEach(function(b){b.onclick=function(){openStudentProfile(b.dataset.id);};});
   tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditStudentModal(b.dataset.id);};});
   tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذا الطالب؟',function(){deleteStudent(b.dataset.id);});};});
+}
+function renderAllMonthlyData(){
+  var tbody=document.getElementById('stuAllMonthlyTable');if(!tbody)return;
+  var q=(document.getElementById('stuSearch')?document.getElementById('stuSearch').value:'').trim().toLowerCase();
+  var g=document.getElementById('stuGrade')?document.getElementById('stuGrade').value:'';
+  var c=document.getElementById('stuCenter')?document.getElementById('stuCenter').value:'';
+  var st=document.getElementById('stuStatus')?document.getElementById('stuStatus').value:'';
+  var monthFilter=document.getElementById('stuMonth')?document.getElementById('stuMonth').value:'';
+  var yearFilter=document.getElementById('stuYear')?document.getElementById('stuYear').value:'2026';
+  
+  var students=load('students').filter(function(s){return(!q||s.name.toLowerCase().includes(q))&&(!g||s.grade===g)&&(!c||s.center===c)&&(!st||s.status===st);});
+  var monthlyData=load('studentMonthlyData');
+  
+  // Filter monthly data based on filters
+  var filteredMonthlyData=monthlyData.filter(function(m){
+    var student=students.find(function(s){return s.id===m.studentId;});
+    if(!student)return false;
+    if(monthFilter!==''&&m.monthIndex!==parseInt(monthFilter))return false;
+    if(yearFilter!==''&&m.year!==parseInt(yearFilter))return false;
+    return true;
+  });
+  
+  // Sort by year and month (newest first)
+  filteredMonthlyData.sort(function(a,b){
+    if(b.year!==a.year)return b.year-a.year;
+    return b.monthIndex-a.monthIndex;
+  });
+  
+  if(!filteredMonthlyData.length){
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--clr-muted)">لا توجد بيانات شهرية.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML=filteredMonthlyData.map(function(m){
+    var student=students.find(function(s){return s.id===m.studentId;});
+    if(!student)return '';
+    
+    var cls=m.status==='منتظم'?'badge-green':'badge-yellow';
+    var payCls=m.paymentStatus==='خالص'?'badge-green':m.paymentStatus==='متبقي'?'badge-yellow':'badge-red';
+    var monthName=MONTHS[m.monthIndex];
+    
+    return '<tr><td style="font-weight:600">'+esc(student.name)+'</td><td>'+esc(monthName)+'</td><td>'+m.year+'</td><td>'+m.attendanceRate+'%</td><td>'+esc(m.homeworkCompleted)+'</td><td>'+(m.examAvg||'—')+'%</td><td><span class="badge '+payCls+'">'+esc(m.paymentStatus)+'</span></td><td><span class="badge '+cls+'">'+esc(m.status)+'</span></td>'
+    +'<td><div class="actions-cell"><button class="act-btn act-btn-edit" data-student-id="'+m.studentId+'" data-month="'+m.monthIndex+'" data-year="'+m.year+'">تعديل</button></div></td></tr>';
+  }).join('');
+  
+  tbody.querySelectorAll('.act-btn-edit').forEach(function(b){
+    b.onclick=function(){
+      openEditStudentModal(b.dataset.studentId);
+      // Set the month and year in the modal after it opens
+      setTimeout(function(){
+        var monthSelect=document.getElementById('monthSelect');
+        var yearSelect=document.getElementById('yearSelect');
+        if(monthSelect)monthSelect.value=b.dataset.month;
+        if(yearSelect)yearSelect.value=b.dataset.year;
+        // Trigger change to load the data
+        monthSelect.dispatchEvent(new Event('change'));
+      },100);
+    };
+  });
 }
 function studentFormHtml(s, currentMonthData){
   var currentMonth=new Date().getMonth();
@@ -515,7 +574,25 @@ function openAddStudentModal(){
         const newStudent = await res.json();
         // Update local data
         var students=load('students');students.push(newStudent);window.APP_DATA.students = students;
-        logActivity(data.name,'تمت إضافة طالب');showToast('تمت إضافة الطالب بنجاح');closeModal();renderStudents();updateNotifications();
+        
+        // Create initial monthly data for the new student
+        var allMonthlyData=load('studentMonthlyData');
+        var initialMonthData={
+          id:genId(),
+          studentId:newStudent.id,
+          monthIndex:parseInt(data.currentMonth)||new Date().getMonth(),
+          year:parseInt(data.currentYear)||new Date().getFullYear(),
+          attendanceRate:parseInt(data.attRate)||100,
+          homeworkCompleted:data.hwCompleted||'0/0',
+          examAvg:parseInt(data.examAvg)||0,
+          paymentStatus:data.payStatus||'لم يتم الدفع',
+          status:data.status||'منتظم',
+          generalNotes:data.generalNotes||''
+        };
+        allMonthlyData.push(initialMonthData);
+        save('studentMonthlyData',allMonthlyData);
+        
+        logActivity(data.name,'تمت إضافة طالب');showToast('تمت إضافة الطالب بنجاح');closeModal();renderStudents();renderAllMonthlyData();updateNotifications();
       } else {
         showToast('حدث خطأ أثناء حفظ الطالب','error');
       }
@@ -554,29 +631,32 @@ function openEditStudentModal(id){
       // Check if next month data already exists
       var nextMonthData=monthlyData.find(function(m){return m.monthIndex===nextMonth&&m.year===nextYear});
       
+      // Load data for next month (existing or new empty)
+      monthSelect.value=nextMonth;
+      yearSelect.value=nextYear;
+      
       if(nextMonthData){
         // Load existing data for next month
-        monthSelect.value=nextMonth;
-        yearSelect.value=nextYear;
         document.querySelector('[name="attendanceRate"]').value=nextMonthData.attendanceRate||'';
         document.querySelector('[name="homeworkCompleted"]').value=nextMonthData.homeworkCompleted||'';
         document.querySelector('[name="examAvg"]').value=nextMonthData.examAvg||'';
         document.querySelector('[name="paymentStatus"]').value=nextMonthData.paymentStatus||'غير مسجل';
         document.querySelector('[name="status"]').value=nextMonthData.status||'منتظم';
         document.querySelector('[name="generalNotes"]').value=nextMonthData.generalNotes||'';
-        showToast('تم تحميل بيانات شهر '+MONTHS[nextMonth]+' '+nextYear);
+        showToast('تم تحميل بيانات شهر '+MONTHS[nextMonth]+' '+nextYear+' (البيانات موجودة)');
       }else{
         // Create new empty data for next month
-        monthSelect.value=nextMonth;
-        yearSelect.value=nextYear;
         document.querySelector('[name="attendanceRate"]').value='';
         document.querySelector('[name="homeworkCompleted"]').value='';
         document.querySelector('[name="examAvg"]').value='';
         document.querySelector('[name="paymentStatus"]').value='غير مسجل';
         document.querySelector('[name="status"]').value='منتظم';
         document.querySelector('[name="generalNotes"]').value='';
-        showToast('تم إنشاء بيانات جديدة لشهر '+MONTHS[nextMonth]+' '+nextYear);
+        showToast('تم إنشاء بيانات جديدة لشهر '+MONTHS[nextMonth]+' '+nextYear+' (البيانات القديمة محفوظة)');
       }
+      
+      // Trigger change to load the data
+      monthSelect.dispatchEvent(new Event('change'));
     };
   }
   
@@ -656,7 +736,7 @@ function openEditStudentModal(id){
         
         save('studentMonthlyData',allMonthlyData);
         
-        logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب');closeModal();renderStudents();renderMonthlyStudentEvaluation();
+        logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب - البيانات القديمة محفوظة');closeModal();renderStudents();renderAllMonthlyData();
       } else {
         showToast('حدث خطأ أثناء تحديث الطالب','error');
       }
@@ -720,7 +800,7 @@ function renderMonthlyStudentEvaluation(){
     var overallLabel=avgRate>=75?'ممتاز':avgRate>=50?'جيد':'يحتاج تحسين';
     return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td><span class="badge '+(att>=75?'badge-green':att>=50?'badge-yellow':'badge-red')+'">'+att+'%</span></td><td><span class="badge '+(hw>=75?'badge-green':hw>=50?'badge-yellow':'badge-red')+'">'+hw+'%</span></td><td><span class="badge '+(exam==='—'?'badge-gray':Number(exam)>=75?'badge-green':Number(exam)>=50?'badge-yellow':'badge-red')+'">'+(exam==='—'?'—':exam+'%')+'</span></td><td><span class="badge '+payColor+'">'+pay+'</span></td><td><span class="badge '+overallColor+'">'+overallLabel+'</span></td><td><div class="actions-cell"><button class="act-btn act-btn-edit" data-id="'+s.id+'">تعديل</button></div></td></tr>';
   }).join('');
-  tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditMonthlyEvaluationModal(b.dataset.id, monthIndex, year);};});
+  tbody.querySelectorAll('.act-btn-edit').forEach(function(b){b.onclick=function(){openEditStudentModal(b.dataset.id);};});
 }
 function openEditMonthlyEvaluationModal(studentId, monthIndex, year){
   var s=getStudent(studentId);
@@ -764,7 +844,7 @@ function openEditMonthlyEvaluationModal(studentId, monthIndex, year){
     logActivity(s.name,'تم تعديل التقييم الشهري لشهر '+monthName);
     showToast('تم حفظ التقييم الشهري بنجاح');
     closeModal();
-    renderMonthlyStudentEvaluation();
+    renderAllMonthlyData();
   };
 }
 

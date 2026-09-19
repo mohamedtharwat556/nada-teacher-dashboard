@@ -397,13 +397,92 @@ function renderStudentDashboard(student) {
 
   const initials = getInitials(student.name);
 
+  // Get all monthly data for this student
+  const monthlyData = window.APP_DATA && window.APP_DATA.studentMonthlyData 
+    ? window.APP_DATA.studentMonthlyData.filter(m => m.studentId === student.id)
+    : [];
+
+  // Sort monthly data by year and month (newest first)
+  monthlyData.sort((a, b) => {
+    if (b.year !== a.year) return b.year - a.year;
+    return b.monthIndex - a.monthIndex;
+  });
+
+  // Render all monthly data cards
+  const monthlyCards = monthlyData.map(monthData => {
+    const monthName = MONTHS[monthData.monthIndex];
+    const year = monthData.year;
+    const payStatus = monthData.paymentStatus || "—";
+    const payIcon = payStatus === "خالص" ? "green" : payStatus === "متبقي" ? "amber" : payStatus === "لم يتم الدفع" ? "red" : "gray";
+    const attPct = monthData.attendanceRate || "—";
+    const hwStats = monthData.homeworkCompleted || "—";
+    const examAvg = monthData.examAvg || "—";
+    const status = monthData.status || "منتظم";
+    const notes = monthData.generalNotes || "";
+
+    return `
+      <div style="margin-top:1.5rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="font-size:1.1rem;color:var(--clr-text);display:flex;align-items:center;gap:0.5rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            ${monthName} ${year}
+          </h3>
+          <span class="badge ${status === 'منتظم' ? 'badge-green' : 'badge-yellow'}">${status}</span>
+        </div>
+        
+        <div class="overview-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem;">
+          <div class="overview-card" style="padding: 1rem;">
+            <div class="overview-icon sky">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="overview-value" style="font-size: 1rem;">${attPct}${attPct !== "—" ? "%" : ""}</div>
+            <div class="overview-label" style="font-size: 0.8rem;">نسبة الحضور</div>
+          </div>
+          <div class="overview-card" style="padding: 1rem;">
+            <div class="overview-icon green">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="overview-value" style="font-size: 1rem;direction:ltr;">${hwStats}</div>
+            <div class="overview-label" style="font-size: 0.8rem;">الواجبات المكتملة</div>
+          </div>
+          <div class="overview-card" style="padding: 1rem;">
+            <div class="overview-icon amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="overview-value" style="font-size: 1rem;">${examAvg}${examAvg !== "—" ? "%" : ""}</div>
+            <div class="overview-label" style="font-size: 0.8rem;">متوسط الامتحانات</div>
+          </div>
+          <div class="overview-card" style="padding: 1rem;">
+            <div class="overview-icon ${payIcon}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <div class="overview-value" style="font-size: 1rem;">${payStatus}</div>
+            <div class="overview-label" style="font-size: 0.8rem;">حالة المصروفات</div>
+          </div>
+        </div>
+        
+        ${notes ? `<div style="margin-top:1rem;padding:1rem;background:var(--clr-bg-light);border-radius:8px;">
+          <p style="font-size:0.9rem;color:var(--clr-muted);margin:0;">${notes}</p>
+        </div>` : ""}
+      </div>
+    `;
+  }).join('');
+
   container.innerHTML = `
     ${renderStudentHeader(student, initials)}
     ${renderOverviewCards(student)}
     ${(student.generalNotes || student.general_notes) ? `<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);">
-      <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text);">ملاحظات المعلم</h3>
+      <h3 style="font-size:1.1rem;margin-bottom:1rem;color:var(--clr-text);">ملاحظات عامة</h3>
       <p style="color:var(--clr-muted);line-height:1.6;">${student.generalNotes || student.general_notes}</p>
     </div>` : ""}
+    
+    ${monthlyData.length > 0 ? `
+      <div style="margin-top:2rem;">
+        <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--clr-text);">السجل الشهري</h3>
+        ${monthlyCards}
+      </div>
+    ` : '<div style="margin-top:2rem;padding:1.5rem;background:var(--clr-bg-card);border-radius:12px;border:1px solid var(--clr-border);text-align:center;"><p style="color:var(--clr-muted);">لا توجد بيانات شهرية مسجلة لهذا الطالب بعد</p></div>'}
+    
     <div class="back-to-search">
       <button class="btn-back" id="backBtn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
