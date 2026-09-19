@@ -229,7 +229,7 @@ async function clearAllData() {
     // Clear data from Supabase
     try {
       // Clear students from Supabase
-      await fetch('/api/students/clear', { method: 'DELETE' });
+      await fetch('/api/clear/students', { method: 'DELETE' });
       console.log('✅ Cleared students from Supabase');
     } catch(e) {
       console.warn('Could not clear students from Supabase:', e);
@@ -237,10 +237,18 @@ async function clearAllData() {
 
     try {
       // Clear monthly data from Supabase
-      await fetch('/api/student-monthly-data/clear', { method: 'DELETE' });
+      await fetch('/api/clear/monthly-data', { method: 'DELETE' });
       console.log('✅ Cleared monthly data from Supabase');
     } catch(e) {
       console.warn('Could not clear monthly data from Supabase:', e);
+    }
+
+    try {
+      // Clear store data from Supabase (legacy data)
+      await fetch('/api/clear/store', { method: 'DELETE' });
+      console.log('✅ Cleared store data from Supabase');
+    } catch(e) {
+      console.warn('Could not clear store data from Supabase:', e);
     }
 
     showToast('تم مسح جميع البيانات بنجاح', 'success');

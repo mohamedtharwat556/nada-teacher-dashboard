@@ -582,7 +582,7 @@ app.post('/api/data', async (req, res) => {
 });
 
 // DELETE all students from Supabase
-app.delete('/api/students/clear', async (req, res) => {
+app.delete('/api/clear/students', async (req, res) => {
     if (!supabase) {
         console.error('❌ Supabase not configured');
         return res.status(500).json({ 
@@ -613,7 +613,7 @@ app.delete('/api/students/clear', async (req, res) => {
 });
 
 // DELETE all monthly data from Supabase
-app.delete('/api/student-monthly-data/clear', async (req, res) => {
+app.delete('/api/clear/monthly-data', async (req, res) => {
     if (!supabase) {
         console.error('❌ Supabase not configured');
         return res.status(500).json({ 
@@ -635,6 +635,37 @@ app.delete('/api/student-monthly-data/clear', async (req, res) => {
         res.json({ success: true, message: 'All monthly data cleared successfully' });
     } catch (err) {
         console.error('❌ Error clearing monthly data from Supabase:', err.message);
+        res.status(500).json({ 
+            error: 'Database delete error',
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+});
+
+// DELETE all store data from Supabase (legacy data)
+app.delete('/api/clear/store', async (req, res) => {
+    if (!supabase) {
+        console.error('❌ Supabase not configured');
+        return res.status(500).json({ 
+            error: 'Supabase not configured',
+            message: 'Please check your .env file for SUPABASE_URL and SUPABASE_ANON_KEY'
+        });
+    }
+
+    try {
+        console.log('🗑️ Clearing all store data from Supabase...');
+        const { error } = await supabase.from('store').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (error) {
+            console.error('❌ Error clearing store data from Supabase:', error);
+            throw error;
+        }
+        
+        console.log('✅ All store data cleared from Supabase');
+        res.json({ success: true, message: 'All store data cleared successfully' });
+    } catch (err) {
+        console.error('❌ Error clearing store data from Supabase:', err.message);
         res.status(500).json({ 
             error: 'Database delete error',
             message: err.message,
