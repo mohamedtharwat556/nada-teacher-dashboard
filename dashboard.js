@@ -433,7 +433,7 @@ function renderStudents(){
   var sec=document.getElementById('studentsSection');
   var currentYear=new Date().getFullYear();
   var currentMonth=new Date().getMonth();
-  sec.innerHTML='<div class="section-header"><h2>الطلاب</h2><button class="btn btn-accent" id="addStuBtn">+ إضافة طالب</button></div>'
+  sec.innerHTML='<div class="section-header"><h2>الطلاب</h2><div><button class="btn btn-danger" id="deleteAllBtn" style="margin-left:0.5rem">حذف الكل</button><button class="btn btn-accent" id="addStuBtn">+ إضافة طالب</button></div></div>'
   +'<div class="table-card"><div class="table-toolbar">'
   +'<input type="text" class="form-input" id="stuSearch" placeholder="ابحث باسم الطالب..." style="max-width:220px"/>'
   +'<select class="form-select" id="stuMonth" style="max-width:160px"><option value="">— الكل —</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+(i===currentMonth?' selected':'')+'>'+m+'</option>';}).join('')+'</select>'
@@ -444,6 +444,7 @@ function renderStudents(){
   +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الشهر الحالي</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>'
   +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">السجل الشهري الكامل - جميع الأشهر لكل طالب</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الشهر</th><th>السنة</th><th>الحضور</th><th>الواجبات</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuAllMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addStuBtn').onclick=function(){openAddStudentModal();};
+  document.getElementById('deleteAllBtn').onclick=function(){showClearDataConfirmation();};
   document.getElementById('stuSearch').oninput=renderStudentRows;
   document.getElementById('stuGrade').onchange=renderStudentRows;
   document.getElementById('stuCenter').onchange=renderStudentRows;
