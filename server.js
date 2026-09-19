@@ -27,12 +27,18 @@ if (supabaseUrl && supabaseUrl !== 'YOUR_SUPABASE_PROJECT_URL_HERE' && supabaseK
 // Middleware
 app.use(cors({
     origin: '*', // In production, specify your domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json({ limit: '10mb' })); // Allow large JSON payloads
-app.use(express.static(path.join(__dirname))); // Serve static files from current directory
+
+// Request logging middleware
+app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.path}`);
+    next();
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -464,6 +470,9 @@ app.post('/api/data', async (req, res) => {
         });
     }
 });
+
+// Serve static files after API routes to avoid conflicts
+app.use(express.static(path.join(__dirname))); // Serve static files from current directory
 
 // 404 handler
 app.use((req, res) => {
