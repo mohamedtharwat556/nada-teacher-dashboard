@@ -452,7 +452,7 @@ function renderStudentRows(){
     // Use monthly data if available, otherwise fall back to student data
     var att=selectedMonthData?selectedMonthData.attendanceRate:(s.attRate||calcAttendanceRate(s.id));
     var exam=selectedMonthData?selectedMonthData.examAvg:(s.examAvg||calcExamAvg(s.id));
-    var hw=selectedMonthData?selectedMonthData.homeworkCompleted:(s.hwCompleted||'—');
+    var hw=selectedMonthData?selectedMonthData.homeworkCompleted:(s.hwCompleted||s.homeworkCompleted||'—');
     var status=selectedMonthData?selectedMonthData.status:(s.status||'منتظم');
     var payStatus=selectedMonthData?selectedMonthData.paymentStatus:(s.payStatus||'—');
     
@@ -541,7 +541,7 @@ function studentFormHtml(s, currentMonthData){
   +'<div class="form-group"><label class="form-label">السنة</label><select class="form-select" name="currentYear" id="yearSelect"><option value="2025">2025</option><option value="2026"'+((s.currentYear!==undefined&&s.currentYear===2026)||currentYear===2026?' selected':'')+'>2026</option><option value="2027">2027</option></select></div>'
   +'<div class="form-group"><label class="form-label">نسبة الحضور (%)</label><input class="form-input" type="number" name="attendanceRate" value="'+esc(monthData.attendanceRate||s.attRate||'')+'" placeholder="مثال: 90"/></div>'
   +'<div class="form-group"><label class="form-label">متوسط الامتحانات (%)</label><input class="form-input" type="number" name="examAvg" value="'+esc(monthData.examAvg||s.examAvg||'')+'" placeholder="مثال: 85"/></div>'
-  +'<div class="form-group"><label class="form-label">الواجبات المكتملة</label><input class="form-input" type="text" name="homeworkCompleted" value="'+esc(monthData.homeworkCompleted||s.hwCompleted||'')+'" placeholder="مثال: 4/5 أو 80%"/></div>'
+  +'<div class="form-group"><label class="form-label">الواجبات المكتملة</label><input class="form-input" type="text" name="homeworkCompleted" value="'+esc(monthData.homeworkCompleted||s.hwCompleted||s.homeworkCompleted||'')+'" placeholder="مثال: 4/5 أو 80%"/></div>'
   +'<div class="form-group"><label class="form-label">حالة المصروفات</label><select class="form-select" name="paymentStatus"><option value="خالص"'+((monthData.paymentStatus||s.payStatus)==='خالص'?' selected':'')+'>خالص</option><option value="متبقي"'+((monthData.paymentStatus||s.payStatus)==='متبقي'?' selected':'')+'>متبقي</option><option value="لم يتم الدفع"'+((monthData.paymentStatus||s.payStatus)==='لم يتم الدفع'?' selected':'')+'>لم يتم الدفع</option></select></div>'
   +'</div>'
   +'<div class="form-group"><label class="form-label">الحالة</label><select class="form-select" name="status"><option value="منتظم"'+((monthData.status||s.status||'منتظم')==='منتظم'?' selected':'')+'>منتظم</option><option value="يحتاج متابعة"'+((monthData.status||s.status)==='يحتاج متابعة'?' selected':'')+'>يحتاج متابعة</option></select></div>'
@@ -583,7 +583,7 @@ function openAddStudentModal(){
           monthIndex:parseInt(data.currentMonth)||new Date().getMonth(),
           year:parseInt(data.currentYear)||new Date().getFullYear(),
           attendanceRate:parseInt(data.attRate)||100,
-          homeworkCompleted:data.hwCompleted||'0/0',
+          homeworkCompleted:data.homeworkCompleted||'0/0',
           examAvg:parseInt(data.examAvg)||0,
           paymentStatus:data.payStatus||'لم يتم الدفع',
           status:data.status||'منتظم',
@@ -772,7 +772,7 @@ function deleteStudent(id){
   });
 }
 function openStudentProfile(id){
-  var s=getStudent(id);var att=s.attRate||calcAttendanceRate(id);var exam=s.examAvg||calcExamAvg(id);var hw=s.hwCompleted||(calcHomeworkRate(id)+'%');
+  var s=getStudent(id);var att=s.attRate||calcAttendanceRate(id);var exam=s.examAvg||calcExamAvg(id);var hw=s.hwCompleted||s.homeworkCompleted||(calcHomeworkRate(id)+'%');
   var payText = s.payStatus||'—';
   var lastNote=load('notes').filter(function(n){return n.studentId===id;}).slice(-1)[0];
   var ovHtml='<div class="overview-grid"><div class="ov-card"><div class="ov-num">'+att+'%</div><div class="ov-lbl">نسبة الحضور</div></div><div class="ov-card"><div class="ov-num">'+(exam==='—'?'—':exam+'%')+'</div><div class="ov-lbl">متوسط الامتحانات</div></div><div class="ov-card"><div class="ov-num">'+hw+'</div><div class="ov-lbl">إنجاز الواجبات</div></div><div class="ov-card"><div class="ov-num">'+payText+'</div><div class="ov-lbl">حالة المصروفات</div></div></div>'+(lastNote?'<div style="margin-top:1rem;padding:.8rem;background:#fffbf0;border-radius:8px;border:1px solid #f0d9a0"><strong>آخر ملاحظة:</strong> '+esc(lastNote.content)+'</div>':'');

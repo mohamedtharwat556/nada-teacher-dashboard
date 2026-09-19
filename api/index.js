@@ -241,7 +241,7 @@ module.exports = async function handler(req, res) {
                     center: studentData.center,
                     status: studentData.status,
                     att_rate: studentData.attRate ? parseInt(studentData.attRate) : 100,
-                    hw_completed: studentData.hwCompleted || '0/0',
+                    hw_completed: studentData.hwCompleted || studentData.homeworkCompleted || '0/0',
                     exam_avg: studentData.examAvg ? parseInt(studentData.examAvg) : 0,
                     pay_status: studentData.payStatus || 'لم يتم الدفع',
                     general_notes: studentData.generalNotes,
@@ -286,7 +286,7 @@ module.exports = async function handler(req, res) {
                 if (studentData.center !== undefined) dbData.center = studentData.center;
                 if (studentData.status !== undefined) dbData.status = studentData.status;
                 if (studentData.attRate !== undefined) dbData.att_rate = parseInt(studentData.attRate);
-                if (studentData.hwCompleted !== undefined) dbData.hw_completed = studentData.hwCompleted;
+                if (studentData.hwCompleted !== undefined || studentData.homeworkCompleted !== undefined) dbData.hw_completed = studentData.hwCompleted || studentData.homeworkCompleted || '0/0';
                 if (studentData.examAvg !== undefined) dbData.exam_avg = parseInt(studentData.examAvg);
                 if (studentData.payStatus !== undefined) dbData.pay_status = studentData.payStatus;
                 if (studentData.generalNotes !== undefined) dbData.general_notes = studentData.generalNotes;
