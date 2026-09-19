@@ -174,7 +174,6 @@ function syncMonthOptions() {
   } else {
     monthSelect.value = prevValue;
   }
-  console.log('Month options synced, current value:', monthSelect.value);
 }
 
 /* =====================================================================
@@ -312,8 +311,6 @@ function renderSearchResults(results, query, month) {
   const section   = document.getElementById('resultsSection');
   const container = document.getElementById('resultsContainer');
 
-  console.log('renderSearchResults called with month:', month);
-
   // Hide student dashboard if visible
   document.getElementById('dashboardSection').style.display = 'none';
 
@@ -342,8 +339,6 @@ function renderSearchResults(results, query, month) {
     const selectedMonthIndex = parseInt(month) || new Date().getMonth();
     const selectedYear = new Date().getFullYear();
     const monthDisplay = MONTHS[selectedMonthIndex] + ' ' + selectedYear;
-    
-    console.log('Rendering student:', s.name, 'with month display:', monthDisplay);
     
     return `
       <div class="result-card reveal" data-student-id="${s.id}" role="button" tabindex="0" aria-label="عرض ملف ${s.name}">
@@ -865,15 +860,10 @@ function initSearch() {
   const gradeSelect= document.getElementById('gradeFilter');
   const monthSelect= document.getElementById('monthFilter');
 
-  console.log('Month select element:', monthSelect);
-  console.log('Month select value:', monthSelect ? monthSelect.value : 'not found');
-
   function performSearch() {
     const name  = nameInput.value.trim();
     const grade = gradeSelect.value;
     const month = monthSelect.value;
-
-    console.log('Search parameters:', { name, grade, month });
 
     if (!name && !grade && !month) {
       showNotification('اكتب اسم الطالب أو اختر صف دراسي أو شهر للبدء في المتابعة.');
@@ -896,7 +886,6 @@ function initSearch() {
     // Simulate realistic async delay
     setTimeout(async () => {
       const results = await searchStudents(name, grade, month);
-      console.log('Search results:', results);
       renderSearchResults(results, name, month);
     }, 650);
   }
