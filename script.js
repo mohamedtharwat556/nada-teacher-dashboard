@@ -173,22 +173,7 @@ if (!window.APP_DATA) {
 }
 async function fetchStudents() {
   try {
-    // Always try to load monthly data from dedicated API first
-    try {
-      const monthlyRes = await fetch('/api/student-monthly-data');
-      if (monthlyRes.ok) {
-        const monthlyData = await monthlyRes.json();
-        window.APP_DATA = window.APP_DATA || {};
-        window.APP_DATA.studentMonthlyData = monthlyData;
-        console.log('📖 Monthly data loaded from dedicated API:', monthlyData.length);
-      } else {
-        console.warn('Monthly data API returned error:', monthlyRes.status);
-      }
-    } catch(e) {
-      console.warn('Could not load monthly data from dedicated API', e);
-    }
-    
-    // Try improved API for students
+    // Load students from improved API
     const res = await fetch('/api/students');
     if (res.ok) {
       CACHED_STUDENTS = await res.json();
@@ -200,13 +185,42 @@ async function fetchStudents() {
         const data = await legacyRes.json();
         // Support both key names for compatibility
         CACHED_STUDENTS = data.students || data.nada_students || [];
-        // Load monthly data as well (backup)
-        if (data.studentMonthlyData || data.nada_studentMonthlyData) {
+        console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
+      }
+    }
+    
+    // Load monthly data from dedicated API
+    try {
+      const monthlyRes = await fetch('/api/student-monthly-data');
+      if (monthlyRes.ok) {
+        const monthlyData = await monthlyRes.json();
+        window.APP_DATA = window.APP_DATA || {};
+        window.APP_DATA.studentMonthlyData = monthlyData;
+        console.log('📖 Monthly data loaded from dedicated API:', monthlyData.length);
+      } else {
+        console.warn('Monthly data API returned error:', monthlyRes.status);
+        // Fallback to legacy API for monthly data
+        const legacyRes = await fetch('/api/data');
+        if (legacyRes.ok) {
+          const data = await legacyRes.json();
           window.APP_DATA = window.APP_DATA || {};
           window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
           console.log('📖 Monthly data loaded from legacy API (backup):', window.APP_DATA.studentMonthlyData.length);
         }
-        console.log('📖 Students loaded from legacy API:', CACHED_STUDENTS.length);
+      }
+    } catch(e) {
+      console.warn('Could not load monthly data from dedicated API', e);
+      // Try legacy API as fallback
+      try {
+        const legacyRes = await fetch('/api/data');
+        if (legacyRes.ok) {
+          const data = await legacyRes.json();
+          window.APP_DATA = window.APP_DATA || {};
+          window.APP_DATA.studentMonthlyData = data.studentMonthlyData || data.nada_studentMonthlyData || [];
+          console.log('📖 Monthly data loaded from legacy API (fallback):', window.APP_DATA.studentMonthlyData.length);
+        }
+      } catch(legacyError) {
+        console.warn('Legacy API also failed for monthly data', legacyError);
       }
     }
     
@@ -415,12 +429,31 @@ function renderStudentDashboard(student) {
   const initials = getInitials(student.name);
 
   // Get all monthly data for this student
-  const monthlyData = window.APP_DATA && window.APP_DATA.studentMonthlyData 
+  let monthlyData = window.APP_DATA && window.APP_DATA.studentMonthlyData 
     ? window.APP_DATA.studentMonthlyData.filter(m => m.studentId === student.id)
     : [];
 
   console.log('Monthly data for student:', student.name, monthlyData);
   console.log('All monthly data in system:', window.APP_DATA?.studentMonthlyData);
+
+  // If no monthly data exists but student has currentMonth/year, create a monthly data entry
+  if (monthlyData.length === 0 && student.currentMonth !== undefined && student.currentYear) {
+    const monthName = MONTHS[student.currentMonth];
+    const syntheticMonthlyData = {
+      id: 'synthetic-' + student.id + '-' + student.currentMonth + '-' + student.currentYear,
+      studentId: student.id,
+      monthIndex: student.currentMonth,
+      year: student.currentYear,
+      attendanceRate: student.attRate || 0,
+      homeworkCompleted: student.hwCompleted || '0/0',
+      examAvg: student.examAvg || 0,
+      paymentStatus: student.payStatus || 'غير مسجل',
+      status: student.status || 'منتظم',
+      generalNotes: student.generalNotes || ''
+    };
+    monthlyData = [syntheticMonthlyData];
+    console.log('Created synthetic monthly data from student record:', syntheticMonthlyData);
+  }
 
   // Sort monthly data by year and month (newest first)
   monthlyData.sort((a, b) => {

@@ -401,7 +401,7 @@ app.post('/api/student-monthly-data', async (req, res) => {
             
             // Convert camelCase to snake_case for Supabase
             const snakeCaseData = monthlyData.map(row => ({
-                id: row.id || require('crypto').randomUUID(), // Generate UUID if not provided
+                id: row.id || crypto.randomUUID(), // Generate UUID if not provided
                 student_id: row.studentId,
                 month_index: row.monthIndex,
                 year: row.year,
@@ -529,7 +529,7 @@ app.post('/api/data', async (req, res) => {
             
             // Convert camelCase to snake_case for Supabase
             const snakeCaseData = monthlyData.map(row => ({
-                id: row.id || require('crypto').randomUUID(), // Generate UUID if not provided
+                id: row.id || crypto.randomUUID(), // Generate UUID if not provided
                 student_id: row.studentId,
                 month_index: row.monthIndex,
                 year: row.year,
