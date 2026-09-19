@@ -52,8 +52,12 @@ module.exports = async function handler(req, res) {
     // Parse URL pathname - handle both Vercel and local environments
     let pathname;
     try {
-        const url = new URL(req.url, `http://${req.headers.host}`);
-        pathname = url.pathname;
+        // Vercel provides the pathname directly
+        pathname = req.url || '/';
+        // Remove query string if present
+        if (pathname.includes('?')) {
+            pathname = pathname.split('?')[0];
+        }
     } catch (e) {
         pathname = req.url || '/';
     }
