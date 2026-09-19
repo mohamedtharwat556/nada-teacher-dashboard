@@ -240,7 +240,9 @@ module.exports = async function handler(req, res) {
                     hw_completed: studentData.hwCompleted || '0/0',
                     exam_avg: studentData.examAvg ? parseInt(studentData.examAvg) : 0,
                     pay_status: studentData.payStatus || 'لم يتم الدفع',
-                    general_notes: studentData.generalNotes
+                    general_notes: studentData.generalNotes,
+                    current_month: studentData.currentMonth !== undefined ? parseInt(studentData.currentMonth) : new Date().getMonth(),
+                    current_year: studentData.currentYear !== undefined ? parseInt(studentData.currentYear) : new Date().getFullYear()
                 };
 
                 const { data, error } = await supabase
@@ -284,6 +286,8 @@ module.exports = async function handler(req, res) {
                 if (studentData.examAvg !== undefined) dbData.exam_avg = parseInt(studentData.examAvg);
                 if (studentData.payStatus !== undefined) dbData.pay_status = studentData.payStatus;
                 if (studentData.generalNotes !== undefined) dbData.general_notes = studentData.generalNotes;
+                if (studentData.currentMonth !== undefined) dbData.current_month = parseInt(studentData.currentMonth);
+                if (studentData.currentYear !== undefined) dbData.current_year = parseInt(studentData.currentYear);
 
                 const { data, error } = await supabase
                     .from('students')

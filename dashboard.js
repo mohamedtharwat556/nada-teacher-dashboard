@@ -519,7 +519,7 @@ function openEditStudentModal(id){
         // Update local data
         var idx=students.findIndex(function(x){return x.id===id;});
         students[idx]=updatedStudent;window.APP_DATA.students = students;
-        logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب');closeModal();renderStudents();
+        logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب');closeModal();renderStudents();renderMonthlyStudentEvaluation();
       } else {
         showToast('حدث خطأ أثناء تحديث الطالب','error');
       }

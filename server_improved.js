@@ -232,6 +232,14 @@ app.post('/api/students', async (req, res) => {
         const studentData = { ...req.body };
         delete studentData.teacher;
         
+        // Ensure currentMonth and currentYear are set if not provided
+        if (!studentData.currentMonth) {
+            studentData.currentMonth = new Date().getMonth();
+        }
+        if (!studentData.currentYear) {
+            studentData.currentYear = new Date().getFullYear();
+        }
+        
         const { data, error } = await supabase
             .from('students')
             .insert([studentData])
@@ -254,6 +262,14 @@ app.put('/api/students/:id', async (req, res) => {
         // Remove teacher field if it doesn't exist in the schema
         const studentData = { ...req.body };
         delete studentData.teacher;
+        
+        // Ensure currentMonth and currentYear are set if not provided
+        if (!studentData.currentMonth) {
+            studentData.currentMonth = new Date().getMonth();
+        }
+        if (!studentData.currentYear) {
+            studentData.currentYear = new Date().getFullYear();
+        }
         
         const { data, error } = await supabase
             .from('students')
