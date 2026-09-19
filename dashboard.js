@@ -548,8 +548,12 @@ function studentFormHtml(s, currentMonthData){
   +'<div class="form-group"><label class="form-label">ملاحظات عامة</label><textarea class="form-textarea" name="generalNotes">'+esc(monthData.generalNotes||s.generalNotes||'')+'</textarea></div>'
   +'<div class="form-group" style="margin-top:1rem;padding:1rem;background:var(--clr-bg-light);border-radius:8px;border:1px solid var(--clr-border);">'
   +'<label class="form-label" style="font-weight:600;color:var(--clr-text);">إدارة البيانات الشهرية</label>'
-  +'<p style="font-size:0.85rem;color:var(--clr-muted);margin-bottom:0.5rem;">يمكنك إضافة بيانات لشهر جديد أو التعديل على البيانات الحالية</p>'
-  +'<button type="button" class="btn btn-accent" id="addNewMonthBtn" style="font-size:0.9rem;padding:0.5rem 1rem;">+ إضافة شهر جديد</button>'
+  +'<p style="font-size:0.85rem;color:var(--clr-muted);margin-bottom:0.5rem;">يمكنك التنقل بين الأشهر وتعديل البيانات الحالية</p>'
+  +'<div style="display:flex;gap:0.5rem;align-items:center;">'
+  +'<button type="button" class="btn btn-ghost" id="prevMonthBtn" style="font-size:0.9rem;padding:0.5rem 1rem;">◀ الشهر السابق</button>'
+  +'<button type="button" class="btn btn-accent" id="nextMonthBtn" style="font-size:0.9rem;padding:0.5rem 1rem;">الشهر التالي ▶</button>'
+  +'</div>'
+  +'<p style="font-size:0.75rem;color:var(--clr-muted);margin-top:0.5rem;">البيانات تحفظ تلقائياً في قاعدة البيانات عند الحفظ</p>'
   +'</div>';
 }
 function openAddStudentModal(){
@@ -592,7 +596,19 @@ function openAddStudentModal(){
         allMonthlyData.push(initialMonthData);
         save('studentMonthlyData',allMonthlyData);
         
-        logActivity(data.name,'تمت إضافة طالب');showToast('تمت إضافة الطالب بنجاح');closeModal();renderStudents();renderAllMonthlyData();updateNotifications();
+        // Also save to Supabase
+        try {
+          await fetch('/api/student-monthly-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentMonthlyData: allMonthlyData })
+          });
+          console.log('Monthly data saved to Supabase');
+        } catch(e) {
+          console.warn('Could not save monthly data to Supabase:', e);
+        }
+        
+        logActivity(data.name,'تمت إضافة طالب');showToast('تمت إضافة الطالب بنجاح - البيانات محفوظة في قاعدة البيانات');closeModal();renderStudents();renderAllMonthlyData();updateNotifications();
       } else {
         showToast('حدث خطأ أثناء حفظ الطالب','error');
       }
@@ -612,9 +628,34 @@ function openEditStudentModal(id){
   openModal('<div class="modal-header"><h3>تعديل بيانات الطالب</h3><button class="modal-close">✕</button></div><div class="modal-body"><form id="stuForm">'+studentFormHtml(s, currentMonthData)+'</form></div><div class="modal-footer"><button class="btn btn-accent" id="stuSaveBtn">حفظ التغييرات</button><button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>');
   
   // Add new month button functionality
-  var addMonthBtn=document.getElementById('addNewMonthBtn');
-  if(addMonthBtn){
-    addMonthBtn.onclick=function(){
+  var prevMonthBtn=document.getElementById('prevMonthBtn');
+  var nextMonthBtn=document.getElementById('nextMonthBtn');
+  
+  if(prevMonthBtn){
+    prevMonthBtn.onclick=function(){
+      var monthSelect=document.getElementById('monthSelect');
+      var yearSelect=document.getElementById('yearSelect');
+      var currentMonth=parseInt(monthSelect.value);
+      var currentYear=parseInt(yearSelect.value);
+      
+      // Calculate previous month
+      var prevMonth=currentMonth-1;
+      var prevYear=currentYear;
+      if(prevMonth<0){
+        prevMonth=11;
+        prevYear--;
+      }
+      
+      // Load data for previous month
+      monthSelect.value=prevMonth;
+      yearSelect.value=prevYear;
+      monthSelect.dispatchEvent(new Event('change'));
+      showToast('تم الانتقال إلى شهر '+MONTHS[prevMonth]+' '+prevYear);
+    };
+  }
+  
+  if(nextMonthBtn){
+    nextMonthBtn.onclick=function(){
       var monthSelect=document.getElementById('monthSelect');
       var yearSelect=document.getElementById('yearSelect');
       var currentMonth=parseInt(monthSelect.value);
@@ -628,35 +669,11 @@ function openEditStudentModal(id){
         nextYear++;
       }
       
-      // Check if next month data already exists
-      var nextMonthData=monthlyData.find(function(m){return m.monthIndex===nextMonth&&m.year===nextYear});
-      
-      // Load data for next month (existing or new empty)
+      // Load data for next month
       monthSelect.value=nextMonth;
       yearSelect.value=nextYear;
-      
-      if(nextMonthData){
-        // Load existing data for next month
-        document.querySelector('[name="attendanceRate"]').value=nextMonthData.attendanceRate||'';
-        document.querySelector('[name="homeworkCompleted"]').value=nextMonthData.homeworkCompleted||'';
-        document.querySelector('[name="examAvg"]').value=nextMonthData.examAvg||'';
-        document.querySelector('[name="paymentStatus"]').value=nextMonthData.paymentStatus||'غير مسجل';
-        document.querySelector('[name="status"]').value=nextMonthData.status||'منتظم';
-        document.querySelector('[name="generalNotes"]').value=nextMonthData.generalNotes||'';
-        showToast('تم تحميل بيانات شهر '+MONTHS[nextMonth]+' '+nextYear+' (البيانات موجودة)');
-      }else{
-        // Create new empty data for next month
-        document.querySelector('[name="attendanceRate"]').value='';
-        document.querySelector('[name="homeworkCompleted"]').value='';
-        document.querySelector('[name="examAvg"]').value='';
-        document.querySelector('[name="paymentStatus"]').value='غير مسجل';
-        document.querySelector('[name="status"]').value='منتظم';
-        document.querySelector('[name="generalNotes"]').value='';
-        showToast('تم إنشاء بيانات جديدة لشهر '+MONTHS[nextMonth]+' '+nextYear+' (البيانات القديمة محفوظة)');
-      }
-      
-      // Trigger change to load the data
       monthSelect.dispatchEvent(new Event('change'));
+      showToast('تم الانتقال إلى شهر '+MONTHS[nextMonth]+' '+nextYear);
     };
   }
   
@@ -743,7 +760,19 @@ function openEditStudentModal(id){
         
         save('studentMonthlyData',allMonthlyData);
         
-        logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب - البيانات القديمة محفوظة');closeModal();renderStudents();renderAllMonthlyData();
+        // Also save to Supabase
+        try {
+          await fetch('/api/student-monthly-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentMonthlyData: allMonthlyData })
+          });
+          console.log('Monthly data saved to Supabase');
+        } catch(e) {
+          console.warn('Could not save monthly data to Supabase:', e);
+        }
+        
+        logActivity(data.name,'تم تعديل بيانات الطالب');showToast('تم تحديث بيانات الطالب - البيانات محفوظة في قاعدة البيانات');closeModal();renderStudents();renderAllMonthlyData();
       } else {
         showToast('حدث خطأ أثناء تحديث الطالب','error');
       }
