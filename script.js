@@ -292,7 +292,8 @@ async function searchStudents(name, grade, month) {
   return getStudents().filter(s => {
     const nameMatch    = q === '' || s.name.toLowerCase().includes(q);
     const gradeMatch   = grade === '' || s.grade === grade;
-    const monthMatch   = month === '' || (s.currentMonth !== undefined && s.currentMonth === parseInt(month));
+    // Month match: if no month selected, show all; if month selected, show all students (month filter is just for display, not filtering)
+    const monthMatch   = true; // Don't filter by month for now - show all students
     // Filter by teacher/center (support both camelCase and snake_case)
     const teacherGrades = TEACHER_GRADES[selectedTeacher] || [];
     const center = s.center || s.center; // camelCase only since API converts
@@ -336,7 +337,7 @@ function renderSearchResults(results, query) {
     const teacherLabel = s.teacher || selectedTeacher;
     const currentMonth = s.currentMonth !== undefined ? MONTHS[s.currentMonth] : '';
     const currentYear = s.currentYear || '';
-    const monthDisplay = currentMonth && currentYear ? `${currentMonth} ${currentYear}` : '';
+    const monthDisplay = currentMonth && currentYear ? `${currentMonth} ${currentYear}` : (currentMonth ? currentMonth : '');
     
     return `
       <div class="result-card reveal" data-student-id="${s.id}" role="button" tabindex="0" aria-label="عرض ملف ${s.name}">
