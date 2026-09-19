@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS students (
     exam_avg INTEGER DEFAULT 0,
     pay_status TEXT DEFAULT 'لم يتم الدفع',
     general_notes TEXT,
+    current_month INTEGER DEFAULT EXTRACT(MONTH FROM NOW()) - 1,
+    current_year INTEGER DEFAULT EXTRACT(YEAR FROM NOW()),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -87,6 +89,23 @@ CREATE TABLE IF NOT EXISTS activities (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- جدول البيانات الشهرية للطلاب
+CREATE TABLE IF NOT EXISTS student_monthly_data (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+    month_index INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    attendance_rate INTEGER DEFAULT 0,
+    homework_completed TEXT DEFAULT '0/0',
+    exam_avg INTEGER DEFAULT 0,
+    payment_status TEXT DEFAULT 'غير مسجل',
+    status TEXT DEFAULT 'منتظم',
+    general_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(student_id, month_index, year)
+);
+
 -- جدول التخزين القديم (للتوافق)
 CREATE TABLE IF NOT EXISTS store (
     id TEXT PRIMARY KEY,
@@ -104,6 +123,8 @@ CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
 CREATE INDEX IF NOT EXISTS idx_payments_student_id ON payments(student_id);
 CREATE INDEX IF NOT EXISTS idx_notes_student_id ON notes(student_id);
 CREATE INDEX IF NOT EXISTS idx_activities_timestamp ON activities(timestamp);
+CREATE INDEX IF NOT EXISTS idx_student_monthly_data_student_id ON student_monthly_data(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_monthly_data_month_year ON student_monthly_data(month_index, year);
 
 -- تمكين Row Level Security (اختياري)
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
@@ -113,6 +134,7 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE student_monthly_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE store ENABLE ROW LEVEL SECURITY;
 
 -- سياسات الوصول (سماح عام للقراءة والكتابة)
@@ -123,4 +145,5 @@ CREATE POLICY "Public Access Attendance" ON attendance FOR ALL USING (true) WITH
 CREATE POLICY "Public Access Payments" ON payments FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Access Notes" ON notes FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Access Activities" ON activities FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Access Student Monthly Data" ON student_monthly_data FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Access Store" ON store FOR ALL USING (true) WITH CHECK (true);

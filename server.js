@@ -67,19 +67,45 @@ app.get('/api/data', async (req, res) => {
 
     try {
         console.log('📖 Fetching data from Supabase...');
-        const { data, error } = await supabase.from('store').select('*');
         
-        if (error) {
-            console.error('❌ Supabase query error:', error);
-            throw error;
+        // Fetch from store table (legacy) for most data
+        const { data: storeData, error: storeError } = await supabase.from('store').select('*');
+        
+        if (storeError) {
+            console.error('❌ Supabase store query error:', storeError);
+            throw storeError;
         }
         
-        // Reconstruct the JSON object from the rows
+        // Reconstruct the JSON object from the store rows
         let result = { ...defaultData };
-        if (data && data.length > 0) {
-            data.forEach(row => {
+        if (storeData && storeData.length > 0) {
+            storeData.forEach(row => {
                 result[row.id] = row.value;
             });
+        }
+        
+        // Fetch student monthly data from the new table
+        const { data: monthlyData, error: monthlyError } = await supabase.from('student_monthly_data').select('*');
+        
+        if (monthlyError) {
+            console.warn('⚠️ Could not fetch student monthly data:', monthlyError.message);
+            // Continue without monthly data
+        } else if (monthlyData) {
+            // Convert snake_case to camelCase for consistency
+            result.studentMonthlyData = monthlyData.map(row => ({
+                id: row.id,
+                studentId: row.student_id,
+                monthIndex: row.month_index,
+                year: row.year,
+                attendanceRate: row.attendance_rate,
+                homeworkCompleted: row.homework_completed,
+                examAvg: row.exam_avg,
+                paymentStatus: row.payment_status,
+                status: row.status,
+                generalNotes: row.general_notes,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at
+            }));
         }
         
         console.log('✅ Data fetched successfully');
@@ -116,17 +142,50 @@ app.post('/api/data', async (req, res) => {
 
         console.log('💾 Saving data to Supabase:', Object.keys(updates));
         
-        // Convert updates into an array of upsert operations
+        // Handle student monthly data separately - save to new table
+        if (updates.studentMonthlyData) {
+            const monthlyData = updates.studentMonthlyData;
+            
+            // Convert camelCase to snake_case for Supabase
+            const snakeCaseData = monthlyData.map(row => ({
+                id: row.id,
+                student_id: row.studentId,
+                month_index: row.monthIndex,
+                year: row.year,
+                attendance_rate: row.attendanceRate,
+                homework_completed: row.homeworkCompleted,
+                exam_avg: row.examAvg,
+                payment_status: row.paymentStatus,
+                status: row.status,
+                general_notes: row.generalNotes
+            }));
+            
+            const { error: monthlyError } = await supabase.from('student_monthly_data').upsert(snakeCaseData, { onConflict: 'student_id,month_index,year' });
+            
+            if (monthlyError) {
+                console.error('❌ Supabase monthly data upsert error:', monthlyError);
+                throw monthlyError;
+            }
+            
+            console.log('✅ Student monthly data saved successfully');
+            
+            // Remove from updates so it doesn't go to store table
+            delete updates.studentMonthlyData;
+        }
+        
+        // Convert remaining updates into an array of upsert operations for store table
         const upserts = Object.keys(updates).map(key => ({
             id: key,
             value: updates[key]
         }));
 
-        const { error } = await supabase.from('store').upsert(upserts, { onConflict: 'id' });
-        
-        if (error) {
-            console.error('❌ Supabase upsert error:', error);
-            throw error;
+        if (upserts.length > 0) {
+            const { error } = await supabase.from('store').upsert(upserts, { onConflict: 'id' });
+            
+            if (error) {
+                console.error('❌ Supabase upsert error:', error);
+                throw error;
+            }
         }
 
         console.log('✅ Data saved successfully');
