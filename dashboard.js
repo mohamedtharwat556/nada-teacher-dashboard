@@ -435,13 +435,13 @@ function renderStudents(){
   +'<select class="form-select" id="stuCenter" style="max-width:160px"><option value="">— المدرس / السنتر —</option>'+CENTERS.map(function(c){return '<option value="'+esc(c)+'">'+c+'</option>';}).join('')+'</select>'
   +'<select class="form-select" id="stuStatus" style="max-width:160px"><option value="">— الحالة —</option><option>منتظم</option><option>يحتاج متابعة</option></select>'
   +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الشهر الحالي</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>'
-  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">السجل الشهري الكامل</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الشهر</th><th>السنة</th><th>الحضور</th><th>الواجبات</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuAllMonthlyTable"></tbody></table></div></div>';
+  +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">السجل الشهري الكامل - جميع الأشهر لكل طالب</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الشهر</th><th>السنة</th><th>الحضور</th><th>الواجبات</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuAllMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addStuBtn').onclick=function(){openAddStudentModal();};
   document.getElementById('stuSearch').oninput=renderStudentRows;
   document.getElementById('stuGrade').onchange=renderStudentRows;
   document.getElementById('stuCenter').onchange=renderStudentRows;
   document.getElementById('stuStatus').onchange=renderStudentRows;
-  ['stuMonth','stuYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderStudentRows();renderAllMonthlyData();};}});
+  ['stuMonth','stuYear'].forEach(function(id){var el=document.getElementById(id);if(el){el.onchange=function(){renderStudentRows();};}});
   renderStudentRows();
   renderAllMonthlyData();
 }
@@ -493,17 +493,20 @@ function renderAllMonthlyData(){
   var students=load('students').filter(function(s){return(!q||s.name.toLowerCase().includes(q))&&(!g||s.grade===g)&&(!c||s.center===c)&&(!st||s.status===st);});
   var monthlyData=load('studentMonthlyData');
   
-  // Filter monthly data based on filters
+  // Filter monthly data based on student filters only (show all months)
   var filteredMonthlyData=monthlyData.filter(function(m){
     var student=students.find(function(s){return s.id===m.studentId;});
-    if(!student)return false;
-    if(monthFilter!==''&&m.monthIndex!==parseInt(monthFilter))return false;
-    if(yearFilter!==''&&m.year!==parseInt(yearFilter))return false;
-    return true;
+    return student; // Only filter by student, show all months for each student
   });
   
-  // Sort by year and month (newest first)
+  // Sort by student name, then year and month (newest first)
   filteredMonthlyData.sort(function(a,b){
+    var studentA=students.find(function(s){return s.id===a.studentId;});
+    var studentB=students.find(function(s){return s.id===b.studentId;});
+    var nameA=studentA?studentA.name:'';
+    var nameB=studentB?studentB.name:'';
+    
+    if(nameA!==nameB)return nameA.localeCompare(nameB);
     if(b.year!==a.year)return b.year-a.year;
     return b.monthIndex-a.monthIndex;
   });
@@ -754,7 +757,7 @@ function openEditStudentModal(id){
         var existingMonthIndex=allMonthlyData.findIndex(function(m){return m.studentId===id&&m.monthIndex===data.currentMonth&&m.year===data.currentYear});
         
         var monthData={
-          id:existingMonthIndex>=0?allMonthlyData[existingMonthIndex].id:genId(),
+          id:existingMonthIndex>=0?allMonthlyData[existingMonthIndex].id:('_'+Math.random().toString(36).substr(2,9)), // Generate simple ID
           studentId:id,
           monthIndex:parseInt(data.currentMonth),
           year:parseInt(data.currentYear),
