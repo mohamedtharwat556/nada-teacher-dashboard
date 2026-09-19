@@ -436,23 +436,40 @@ function renderStudentDashboard(student) {
   console.log('Monthly data for student:', student.name, monthlyData);
   console.log('All monthly data in system:', window.APP_DATA?.studentMonthlyData);
 
-  // If no monthly data exists but student has currentMonth/year, create a monthly data entry
+  // If no monthly data exists but student has currentMonth/year, create monthly data entries for recent months
   if (monthlyData.length === 0 && student.currentMonth !== undefined && student.currentYear) {
-    const monthName = MONTHS[student.currentMonth];
-    const syntheticMonthlyData = {
-      id: 'synthetic-' + student.id + '-' + student.currentMonth + '-' + student.currentYear,
-      studentId: student.id,
-      monthIndex: student.currentMonth,
-      year: student.currentYear,
-      attendanceRate: student.attRate || 0,
-      homeworkCompleted: student.hwCompleted || '0/0',
-      examAvg: student.examAvg || 0,
-      paymentStatus: student.payStatus || 'غير مسجل',
-      status: student.status || 'منتظم',
-      generalNotes: student.generalNotes || ''
-    };
-    monthlyData = [syntheticMonthlyData];
-    console.log('Created synthetic monthly data from student record:', syntheticMonthlyData);
+    const currentMonth = student.currentMonth;
+    const currentYear = student.currentYear;
+    
+    // Create data for the last 3 months (including current month)
+    const monthsToCreate = [];
+    for (let i = 2; i >= 0; i--) {
+      let monthIndex = currentMonth - i;
+      let year = currentYear;
+      
+      // Handle year rollover
+      if (monthIndex < 0) {
+        monthIndex += 12;
+        year -= 1;
+      }
+      
+      const syntheticMonthlyData = {
+        id: 'synthetic-' + student.id + '-' + monthIndex + '-' + year,
+        studentId: student.id,
+        monthIndex: monthIndex,
+        year: year,
+        attendanceRate: student.attRate || 0,
+        homeworkCompleted: student.hwCompleted || '0/0',
+        examAvg: student.examAvg || 0,
+        paymentStatus: student.payStatus || 'غير مسجل',
+        status: student.status || 'منتظم',
+        generalNotes: student.generalNotes || ''
+      };
+      monthsToCreate.push(syntheticMonthlyData);
+    }
+    
+    monthlyData = monthsToCreate;
+    console.log('Created synthetic monthly data for recent months:', monthsToCreate);
   }
 
   // Sort monthly data by year and month (newest first)
