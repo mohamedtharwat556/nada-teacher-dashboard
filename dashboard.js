@@ -6,7 +6,7 @@ const GRADES=['الصف الرابع الابتدائي','الصف الخامس 
 const CENTERS=['الكاشف','سيف الدين'];
 const NOTE_CATS=['أكاديمي','واجبات','حضور','سلوك','متابعة عامة','متميز'];
 const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-function genId(){return '_'+Math.random().toString(36).substr(2,9);}
+function genId(){return require('crypto').randomUUID();}
 function today(){return new Date().toISOString().split('T')[0];}
 function now(){return new Date().toISOString();}
 function fmtDate(d){return d?new Date(d).toLocaleDateString('ar-EG'):'—';}
@@ -757,7 +757,7 @@ function openEditStudentModal(id){
         var existingMonthIndex=allMonthlyData.findIndex(function(m){return m.studentId===id&&m.monthIndex===data.currentMonth&&m.year===data.currentYear});
         
         var monthData={
-          id:existingMonthIndex>=0?allMonthlyData[existingMonthIndex].id:('_'+Math.random().toString(36).substr(2,9)), // Generate simple ID
+          id:existingMonthIndex>=0?allMonthlyData[existingMonthIndex].id:require('crypto').randomUUID(), // Always generate proper UUID
           studentId:id,
           monthIndex:parseInt(data.currentMonth),
           year:parseInt(data.currentYear),
