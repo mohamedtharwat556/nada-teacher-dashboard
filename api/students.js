@@ -48,7 +48,95 @@ module.exports = async function handler(req, res) {
         return;
     }
 
+    // Parse URL to check if it's a specific student ID request
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = url.pathname;
+    const pathParts = pathname.split('/').filter(Boolean);
+
     try {
+        // Handle specific student ID operations (GET, PUT, DELETE)
+        if (pathParts.length === 3 && pathParts[0] === 'api' && pathParts[1] === 'students') {
+            const studentId = pathParts[2];
+
+            if (req.method === 'GET') {
+                if (!supabase) {
+                    return res.status(500).json({ error: 'Supabase not configured' });
+                }
+
+                const { data, error } = await supabase
+                    .from('students')
+                    .select('*')
+                    .eq('id', studentId)
+                    .single();
+
+                if (error) {
+                    console.error('Supabase error fetching student:', error);
+                    return res.status(404).json({ error: 'Student not found' });
+                }
+
+                const camelCaseData = snakeToCamel(data);
+                return res.json(camelCaseData);
+            }
+
+            if (req.method === 'PUT') {
+                if (!supabase) {
+                    return res.status(500).json({ error: 'Supabase not configured' });
+                }
+
+                const studentData = req.body;
+                delete studentData.teacher;
+
+                const dbData = {};
+                if (studentData.name !== undefined) dbData.name = studentData.name;
+                if (studentData.grade !== undefined) dbData.grade = studentData.grade;
+                if (studentData.center !== undefined) dbData.center = studentData.center;
+                if (studentData.status !== undefined) dbData.status = studentData.status;
+                if (studentData.attRate !== undefined) dbData.att_rate = parseInt(studentData.attRate);
+                if (studentData.hwCompleted !== undefined) dbData.hw_completed = studentData.hwCompleted;
+                if (studentData.examAvg !== undefined) dbData.exam_avg = parseInt(studentData.examAvg);
+                if (studentData.payStatus !== undefined) dbData.pay_status = studentData.payStatus;
+                if (studentData.generalNotes !== undefined) dbData.general_notes = studentData.generalNotes;
+                if (studentData.currentMonth !== undefined) dbData.current_month = parseInt(studentData.currentMonth);
+                if (studentData.currentYear !== undefined) dbData.current_year = parseInt(studentData.currentYear);
+
+                const { data, error } = await supabase
+                    .from('students')
+                    .update(dbData)
+                    .eq('id', studentId)
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('Supabase update error:', error);
+                    return res.status(500).json({ error: 'Failed to update student' });
+                }
+
+                const camelCaseData = snakeToCamel(data);
+                return res.json(camelCaseData);
+            }
+
+            if (req.method === 'DELETE') {
+                if (!supabase) {
+                    return res.status(500).json({ error: 'Supabase not configured' });
+                }
+
+                const { error } = await supabase
+                    .from('students')
+                    .delete()
+                    .eq('id', studentId);
+
+                if (error) {
+                    console.error('Supabase delete error:', error);
+                    return res.status(500).json({ error: 'Failed to delete student' });
+                }
+
+                return res.json({ success: true });
+            }
+
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // Handle general students operations (GET all, POST)
         if (req.method === 'GET') {
             if (!supabase) {
                 return res.status(500).json({ error: 'Supabase not configured' });
