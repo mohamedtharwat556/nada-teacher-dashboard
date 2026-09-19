@@ -411,7 +411,7 @@ function renderStudents(){
   +'<select class="form-select" id="stuGrade" style="max-width:220px"><option value="">— كل الصفوف —</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'">'+g+'</option>';}).join('')+'</select>'
   +'<select class="form-select" id="stuCenter" style="max-width:160px"><option value="">— المدرس / السنتر —</option>'+CENTERS.map(function(c){return '<option value="'+esc(c)+'">'+c+'</option>';}).join('')+'</select>'
   +'<select class="form-select" id="stuStatus" style="max-width:160px"><option value="">— الحالة —</option><option>منتظم</option><option>يحتاج متابعة</option></select>'
-  +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>'
+  +'</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>اسم الطالب</th><th>الصف</th><th>السنتر</th><th>الشهر الحالي</th><th>الحضور</th><th>الامتحانات</th><th>المصروفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="stuTbody"></tbody></table></div></div>'
   +'<div class="table-card" style="margin-top:1rem"><div class="activity-card-title" style="padding:.9rem 1.2rem;border-bottom:1px solid var(--clr-border)">التقييم الشهري الشامل</div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الحضور الشهري</th><th>الواجبات الشهرية</th><th>الامتحانات الشهرية</th><th>المدفوعات الشهرية</th><th>التقييم العام</th><th>الإجراءات</th></tr></thead><tbody id="stuMonthlyTable"></tbody></table></div></div>';
   document.getElementById('addStuBtn').onclick=function(){openAddStudentModal();};
   document.getElementById('stuSearch').oninput=renderStudentRows;
@@ -436,7 +436,10 @@ function renderStudentRows(){
     var att=s.attRate||calcAttendanceRate(s.id);var exam=s.examAvg||calcExamAvg(s.id);
     var cls=s.status==='منتظم'?'badge-green':'badge-yellow';
     var payCls=s.payStatus==='خالص'?'badge-green':s.payStatus==='متبقي'?'badge-yellow':'badge-red';
-    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td><span class="badge badge-blue">'+esc(s.center||'—')+'</span></td><td>'+att+'%</td><td>'+(exam==='—'?'—':exam+'%')+'</td><td><span class="badge '+payCls+'">'+esc(s.payStatus||'—')+'</span></td><td><span class="badge '+cls+'">'+esc(s.status)+'</span></td>'
+    var currentMonth=s.currentMonth!==undefined?MONTHS[s.currentMonth]:'—';
+    var currentYear=s.currentYear||'—';
+    var monthDisplay=currentMonth!=='—'?currentMonth+' '+currentYear:'—';
+    return '<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.grade)+'</td><td><span class="badge badge-blue">'+esc(s.center||'—')+'</span></td><td>'+monthDisplay+'</td><td>'+att+'%</td><td>'+(exam==='—'?'—':exam+'%')+'</td><td><span class="badge '+payCls+'">'+esc(s.payStatus||'—')+'</span></td><td><span class="badge '+cls+'">'+esc(s.status)+'</span></td>'
     +'<td><div class="actions-cell"><button class="act-btn act-btn-view" data-id="'+s.id+'">عرض</button><button class="act-btn act-btn-edit" data-id="'+s.id+'">تعديل</button><button class="act-btn act-btn-delete" data-id="'+s.id+'">حذف</button></div></td></tr>';
   }).join('');
   tbody.querySelectorAll('.act-btn-view').forEach(function(b){b.onclick=function(){openStudentProfile(b.dataset.id);};});
@@ -444,10 +447,14 @@ function renderStudentRows(){
   tbody.querySelectorAll('.act-btn-delete').forEach(function(b){b.onclick=function(){confirmDel('هل أنتِ متأكدة من حذف هذا الطالب؟',function(){deleteStudent(b.dataset.id);});};});
 }
 function studentFormHtml(s){
+  var currentMonth=new Date().getMonth();
+  var currentYear=new Date().getFullYear();
   return '<div class="form-group"><label class="form-label">اسم الطالب *</label><input class="form-input" name="name" value="'+esc(s.name||'')+'"/></div>'
   +'<div class="form-group"><label class="form-label">الصف الدراسي *</label><select class="form-select" name="grade"><option value="">اختر الصف</option>'+GRADES.map(function(g){return '<option value="'+esc(g)+'"'+(s.grade===g?' selected':'')+'>'+g+'</option>';}).join('')+'</select></div>'
   +'<div class="form-group"><label class="form-label">المدرس / السنتر *</label><select class="form-select" name="center"><option value="">اختر السنتر</option>'+CENTERS.map(function(c){return '<option value="'+esc(c)+'"'+(s.center===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">'
+  +'<div class="form-group"><label class="form-label">الشهر الحالي</label><select class="form-select" name="currentMonth"><option value="">اختر الشهر</option>'+MONTHS.map(function(m,i){return '<option value="'+i+'"'+((s.currentMonth!==undefined&&s.currentMonth===i)?' selected':(i===currentMonth?' selected':''))+'>'+m+'</option>';}).join('')+'</select></div>'
+  +'<div class="form-group"><label class="form-label">السنة</label><select class="form-select" name="currentYear"><option value="2025">2025</option><option value="2026"'+((s.currentYear!==undefined&&s.currentYear===2026)||currentYear===2026?' selected':'')+'>2026</option><option value="2027">2027</option></select></div>'
   +'<div class="form-group"><label class="form-label">نسبة الحضور (%)</label><input class="form-input" type="number" name="attRate" value="'+esc(s.attRate||'')+'" placeholder="مثال: 90"/></div>'
   +'<div class="form-group"><label class="form-label">متوسط الامتحانات (%)</label><input class="form-input" type="number" name="examAvg" value="'+esc(s.examAvg||'')+'" placeholder="مثال: 85"/></div>'
   +'<div class="form-group"><label class="form-label">الواجبات المكتملة</label><input class="form-input" type="text" name="hwCompleted" value="'+esc(s.hwCompleted||'')+'" placeholder="مثال: 4/5 أو 80%"/></div>'
@@ -463,6 +470,8 @@ function openAddStudentModal(){
     if(!data.name.trim()){showToast('من فضلك أدخل اسم الطالب.','error');return;}
     if(!data.grade){showToast('من فضلك اختر الصف الدراسي.','error');return;}
     if(!data.center){showToast('من فضلك اختر السنتر (الكاشف / سيف الدين).','error');return;}
+    data.currentMonth=parseInt(data.currentMonth)||new Date().getMonth();
+    data.currentYear=parseInt(data.currentYear)||new Date().getFullYear();
     
     try {
       // Save to backend
@@ -494,6 +503,8 @@ function openEditStudentModal(id){
     if(!data.name.trim()){showToast('من فضلك أدخل اسم الطالب.','error');return;}
     if(!data.grade){showToast('من فضلك اختر الصف الدراسي.','error');return;}
     if(!data.center){showToast('من فضلك اختر السنتر.','error');return;}
+    data.currentMonth=parseInt(data.currentMonth)||new Date().getMonth();
+    data.currentYear=parseInt(data.currentYear)||new Date().getFullYear();
     
     try {
       // Update on backend

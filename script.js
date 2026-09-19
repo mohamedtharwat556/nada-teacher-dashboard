@@ -118,6 +118,8 @@ const TEACHER_GRADES = {
   ],
 };
 
+const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
 /** Currently selected teacher — default: الكاشف */
 let selectedTeacher = 'الكاشف';
 
@@ -147,6 +149,33 @@ function syncGradeOptions() {
   }
 }
 
+/**
+ * Rebuild the month <select> options.
+ */
+function syncMonthOptions() {
+  const monthSelect = document.getElementById('monthFilter');
+  if (!monthSelect) return;
+
+  const currentMonth = new Date().getMonth();
+  const prevValue = monthSelect.value;
+
+  // Rebuild options
+  monthSelect.innerHTML = '<option value="">— كل الأشهر —</option>';
+  MONTHS.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = m;
+    monthSelect.appendChild(opt);
+  });
+
+  // Set current month as default if no previous selection
+  if (prevValue === '') {
+    monthSelect.value = currentMonth;
+  } else {
+    monthSelect.value = prevValue;
+  }
+}
+
 /* =====================================================================
    DATA LAYER — Mock Student Database
    ===================================================================== */
@@ -173,7 +202,11 @@ async function fetchStudents() {
     }
   } catch(e) { console.warn('Backend not reachable', e); }
 }
-document.addEventListener('DOMContentLoaded', fetchStudents);
+document.addEventListener('DOMContentLoaded', function() {
+  fetchStudents();
+  syncGradeOptions();
+  syncMonthOptions();
+});
 
 /* =====================================================================
    HELPER UTILITIES
@@ -244,13 +277,13 @@ function hwBadge(status) {
 
 /**
  * Search students by name (full or partial, case-insensitive)
- * and optional grade filter.
+ * and optional grade filter and month filter.
  *
  * Replace this function's internals with an API call in production:
- *   const results = await fetch(`/api/students?name=${name}&grade=${grade}`)
+ *   const results = await fetch(`/api/students?name=${name}&grade=${grade}&month=${month}`)
  *     .then(r => r.json());
  */
-async function searchStudents(name, grade) {
+async function searchStudents(name, grade, month) {
   // Always fetch fresh data before searching
   await fetchStudents();
 
@@ -259,12 +292,13 @@ async function searchStudents(name, grade) {
   return getStudents().filter(s => {
     const nameMatch    = q === '' || s.name.toLowerCase().includes(q);
     const gradeMatch   = grade === '' || s.grade === grade;
+    const monthMatch   = month === '' || (s.currentMonth !== undefined && s.currentMonth === parseInt(month));
     // Filter by teacher/center (support both camelCase and snake_case)
     const teacherGrades = TEACHER_GRADES[selectedTeacher] || [];
     const center = s.center || s.center; // camelCase only since API converts
     const teacherMatch  = center === selectedTeacher
                        || teacherGrades.includes(s.grade);
-    return nameMatch && gradeMatch && teacherMatch;
+    return nameMatch && gradeMatch && monthMatch && teacherMatch;
   });
 }
 
@@ -300,6 +334,10 @@ function renderSearchResults(results, query) {
   const cards = results.map(s => {
     const initials = getInitials(s.name);
     const teacherLabel = s.teacher || selectedTeacher;
+    const currentMonth = s.currentMonth !== undefined ? MONTHS[s.currentMonth] : '';
+    const currentYear = s.currentYear || '';
+    const monthDisplay = currentMonth && currentYear ? `${currentMonth} ${currentYear}` : '';
+    
     return `
       <div class="result-card reveal" data-student-id="${s.id}" role="button" tabindex="0" aria-label="عرض ملف ${s.name}">
         <div class="result-card-info">
@@ -307,6 +345,10 @@ function renderSearchResults(results, query) {
           <div>
             <div class="result-name">${s.name}</div>
             <div class="result-grade">${s.grade}</div>
+            ${monthDisplay ? `<div class="result-month" style="font-size:0.8rem;color:var(--text-light);margin-top:0.2rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              ${monthDisplay}
+            </div>` : ''}
             <div class="result-teacher-tag">
               <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
               ${teacherLabel}
@@ -383,6 +425,10 @@ function renderStudentDashboard(student) {
 /* ---- Student Header ---- */
 function renderStudentHeader(student, initials) {
   const teacherLabel = student.teacher || selectedTeacher;
+  const currentMonth = student.currentMonth !== undefined ? MONTHS[student.currentMonth] : '';
+  const currentYear = student.currentYear || '';
+  const monthDisplay = currentMonth && currentYear ? `${currentMonth} ${currentYear}` : '';
+  
   return `
     <div class="student-header">
       <div class="student-header-inner">
@@ -394,6 +440,10 @@ function renderStudentHeader(student, initials) {
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
               ${student.grade}
             </div>
+            ${monthDisplay ? `<div class="student-header-month" style="font-size:0.85rem;color:var(--text-light);margin-top:0.25rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              ${monthDisplay}
+            </div>` : ''}
           </div>
         </div>
         <div class="student-header-badges">
@@ -806,13 +856,15 @@ function initSearch() {
   const searchBtn  = document.getElementById('searchBtn');
   const nameInput  = document.getElementById('studentName');
   const gradeSelect= document.getElementById('gradeFilter');
+  const monthSelect= document.getElementById('monthFilter');
 
   function performSearch() {
     const name  = nameInput.value.trim();
     const grade = gradeSelect.value;
+    const month = monthSelect.value;
 
-    if (!name && !grade) {
-      showNotification('اكتب اسم الطالب للبدء في المتابعة.');
+    if (!name && !grade && !month) {
+      showNotification('اكتب اسم الطالب أو اختر صف دراسي أو شهر للبدء في المتابعة.');
       nameInput.focus();
       return;
     }
@@ -831,7 +883,7 @@ function initSearch() {
 
     // Simulate realistic async delay
     setTimeout(async () => {
-      const results = await searchStudents(name, grade);
+      const results = await searchStudents(name, grade, month);
       renderSearchResults(results, name);
     }, 650);
   }
@@ -853,6 +905,7 @@ function initSearch() {
       btn.classList.add('active');
       selectedTeacher = btn.dataset.teacher;
       syncGradeOptions();
+      syncMonthOptions();
 
       // Reset results when teacher changes
       document.getElementById('resultsSection').style.display  = 'none';
