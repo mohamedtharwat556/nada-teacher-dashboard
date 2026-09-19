@@ -27,6 +27,18 @@ function setCorsHeaders(res) {
     );
 }
 
+// Helper function to convert snake_case to camelCase
+function snakeToCamel(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(snakeToCamel);
+
+    return Object.keys(obj).reduce((acc, key) => {
+        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        acc[camelKey] = snakeToCamel(obj[key]);
+        return acc;
+    }, {});
+}
+
 module.exports = async function handler(req, res) {
     setCorsHeaders(res);
 
@@ -39,27 +51,19 @@ module.exports = async function handler(req, res) {
     try {
         if (req.method === 'GET') {
             if (!supabase) {
-                return res.status(500).json({
-                    error: 'Supabase not configured',
-                    message: 'Please check environment variables for SUPABASE_URL and SUPABASE_ANON_KEY'
-                });
+                return res.status(500).json({ error: 'Supabase not configured' });
             }
 
-            console.log('📖 Fetching data from Supabase...');
-
-            const [studentsRes, homeworkRes, examsRes, attendanceRes, paymentsRes, notesRes, activitiesRes, monthlyDataRes] = await Promise.all([
-                supabase.from('students').select('*'),
-                supabase.from('homework').select('*'),
-                supabase.from('exams').select('*'),
-                supabase.from('attendance').select('*'),
-                supabase.from('payments').select('*'),
-                supabase.from('notes').select('*'),
-                supabase.from('activities').select('*'),
-                supabase.from('student_monthly_data').select('*')
-            ]);
-
-            // Convert monthly data to camelCase
-            const monthlyData = monthlyDataRes.data ? monthlyDataRes.data.map(row => ({
+            console.log('📖 Fetching student monthly data from Supabase...');
+            const { data, error } = await supabase.from('student_monthly_data').select('*');
+            
+            if (error) {
+                console.error('❌ Supabase monthly data query error:', error);
+                return res.status(500).json({ error: 'Database error', message: error.message });
+            }
+            
+            // Convert snake_case to camelCase for frontend compatibility
+            const monthlyData = data.map(row => ({
                 id: row.id,
                 studentId: row.student_id,
                 monthIndex: row.month_index,
@@ -72,29 +76,15 @@ module.exports = async function handler(req, res) {
                 generalNotes: row.general_notes,
                 createdAt: row.created_at,
                 updatedAt: row.updated_at
-            })) : [];
-
-            const result = {
-                students: studentsRes.data || [],
-                homework: homeworkRes.data || [],
-                exams: examsRes.data || [],
-                attendance: attendanceRes.data || [],
-                payments: paymentsRes.data || [],
-                notes: notesRes.data || [],
-                activities: activitiesRes.data || [],
-                studentMonthlyData: monthlyData
-            };
-
-            console.log('✅ Data fetched successfully');
-            return res.status(200).json(result);
+            }));
+            
+            console.log('✅ Monthly data fetched successfully:', monthlyData.length);
+            return res.json(monthlyData);
         }
 
         if (req.method === 'POST') {
             if (!supabase) {
-                return res.status(500).json({ 
-                    error: 'Supabase not configured',
-                    message: 'Please check environment variables for SUPABASE_URL and SUPABASE_ANON_KEY'
-                });
+                return res.status(500).json({ error: 'Supabase not configured' });
             }
 
             const updates = req.body;
@@ -106,9 +96,9 @@ module.exports = async function handler(req, res) {
                 });
             }
 
-            console.log('💾 Saving data to Supabase:', Object.keys(updates));
+            console.log('💾 Saving monthly data to Supabase:', Object.keys(updates));
             
-            // Handle student monthly data separately
+            // Handle student monthly data
             if (updates.studentMonthlyData) {
                 const monthlyData = updates.studentMonthlyData;
                 
@@ -126,42 +116,23 @@ module.exports = async function handler(req, res) {
                     general_notes: row.generalNotes
                 }));
                 
-                const { error: monthlyError } = await supabase.from('student_monthly_data').upsert(snakeCaseData, { onConflict: 'student_id,month_index,year' });
+                const { error } = await supabase.from('student_monthly_data').upsert(snakeCaseData, { onConflict: 'student_id,month_index,year' });
                 
-                if (monthlyError) {
-                    console.error('❌ Supabase monthly data upsert error:', monthlyError);
-                    throw monthlyError;
+                if (error) {
+                    console.error('❌ Supabase monthly data upsert error:', error);
+                    throw error;
                 }
                 
                 console.log('✅ Student monthly data saved successfully');
-                
-                // Remove from updates so it doesn't go to store table
-                delete updates.studentMonthlyData;
-            }
-            
-            // Save remaining data to store table
-            const upserts = Object.keys(updates).map(key => ({
-                id: key,
-                value: updates[key]
-            }));
-
-            if (upserts.length > 0) {
-                const { error } = await supabase.from('store').upsert(upserts, { onConflict: 'id' });
-                
-                if (error) {
-                    console.error('❌ Supabase upsert error:', error);
-                    throw error;
-                }
+                return res.status(200).json({ success: true, message: 'Monthly data saved successfully' });
             }
 
-            console.log('✅ Data saved successfully');
-            res.status(200).json({ success: true, message: 'Data saved successfully to Supabase' });
-            return;
+            return res.status(400).json({ error: 'Invalid data format' });
         }
 
         res.status(405).json({ error: 'Method not allowed' });
     } catch (err) {
-        console.error('Error in data API:', err);
+        console.error('Error in student monthly data API:', err);
         return res.status(500).json({ error: 'Internal server error', message: err.message });
     }
 };
