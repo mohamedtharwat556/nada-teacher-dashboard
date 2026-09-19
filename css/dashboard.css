@@ -786,17 +786,3 @@ body{-webkit-overflow-scrolling:touch}
   .section-header h2{font-size:1.4rem}
   .stat-num{font-size:2.2rem}
 }
-
-/* Dark mode support for mobile */
-@media(prefers-color-scheme:dark){
-  :root{
-    --clr-bg:#1a1a2e;
-    --clr-card:#16213e;
-    --clr-border:#2a2a4a;
-    --clr-text:#eaeaea;
-    --clr-muted:#a0a0c0
-  }
-  .sidebar{background:linear-gradient(180deg,#0f0f23,#1a1a2e)}
-  .modal-box{background:#16213e;color:#eaeaea}
-  .form-input,.form-select{background:#1a1a2e;color:#eaeaea;border-color:#2a2a4a}
-}
