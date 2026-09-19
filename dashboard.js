@@ -683,6 +683,7 @@ function openEditStudentModal(id){
       document.querySelector('[name="paymentStatus"]').value='غير مسجل';
       document.querySelector('[name="status"]').value='منتظم';
       document.querySelector('[name="generalNotes"]').value='';
+      console.log('No existing data for month, using empty values');
     }
   }
   
@@ -696,6 +697,9 @@ function openEditStudentModal(id){
     if(!data.center){showToast('من فضلك اختر السنتر.','error');return;}
     data.currentMonth=parseInt(data.currentMonth)||new Date().getMonth();
     data.currentYear=parseInt(data.currentYear)||new Date().getFullYear();
+    
+    console.log('Form data before save:', data);
+    console.log('Homework completed from form:', data.homeworkCompleted);
     
     try {
       // Update student basic info
@@ -721,12 +725,15 @@ function openEditStudentModal(id){
           monthIndex:parseInt(data.currentMonth),
           year:parseInt(data.currentYear),
           attendanceRate:parseInt(data.attendanceRate)||0,
-          homeworkCompleted:data.homeworkCompleted||'0/0',
+          homeworkCompleted:(data.homeworkCompleted&&data.homeworkCompleted.trim())?data.homeworkCompleted.trim():'0/0',
           examAvg:parseInt(data.examAvg)||0,
           paymentStatus:data.paymentStatus||'غير مسجل',
           status:data.status||'منتظم',
           generalNotes:data.generalNotes||''
         };
+        
+        console.log('Saving monthly data:', monthData);
+        console.log('Homework completed value:', data.homeworkCompleted);
         
         if(existingMonthIndex>=0){
           allMonthlyData[existingMonthIndex]=monthData;
