@@ -149,33 +149,6 @@ function syncGradeOptions() {
   }
 }
 
-/**
- * Rebuild the month <select> options.
- */
-function syncMonthOptions() {
-  const monthSelect = document.getElementById('monthFilter');
-  if (!monthSelect) return;
-
-  const currentMonth = new Date().getMonth();
-  const prevValue = monthSelect.value;
-
-  // Rebuild options
-  monthSelect.innerHTML = '<option value="">— كل الأشهر —</option>';
-  MONTHS.forEach((m, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = m;
-    monthSelect.appendChild(opt);
-  });
-
-  // Set current month as default if no previous selection
-  if (prevValue === '') {
-    monthSelect.value = currentMonth;
-  } else {
-    monthSelect.value = prevValue;
-  }
-}
-
 /* =====================================================================
    DATA LAYER — Mock Student Database
    ===================================================================== */
@@ -205,7 +178,6 @@ async function fetchStudents() {
 document.addEventListener('DOMContentLoaded', function() {
   fetchStudents();
   syncGradeOptions();
-  syncMonthOptions();
 });
 
 /* =====================================================================
@@ -277,13 +249,13 @@ function hwBadge(status) {
 
 /**
  * Search students by name (full or partial, case-insensitive)
- * and optional grade filter and month filter.
+ * and optional grade filter.
  *
  * Replace this function's internals with an API call in production:
- *   const results = await fetch(`/api/students?name=${name}&grade=${grade}&month=${month}`)
+ *   const results = await fetch(`/api/students?name=${name}&grade=${grade}`)
  *     .then(r => r.json());
  */
-async function searchStudents(name, grade, month) {
+async function searchStudents(name, grade) {
   // Always fetch fresh data before searching
   await fetchStudents();
 
@@ -307,7 +279,7 @@ async function searchStudents(name, grade, month) {
    RENDER — SEARCH RESULTS
    ===================================================================== */
 
-function renderSearchResults(results, query, month) {
+function renderSearchResults(results, query) {
   const section   = document.getElementById('resultsSection');
   const container = document.getElementById('resultsContainer');
 
@@ -858,15 +830,13 @@ function initSearch() {
   const searchBtn  = document.getElementById('searchBtn');
   const nameInput  = document.getElementById('studentName');
   const gradeSelect= document.getElementById('gradeFilter');
-  const monthSelect= document.getElementById('monthFilter');
 
   function performSearch() {
     const name  = nameInput.value.trim();
     const grade = gradeSelect.value;
-    const month = monthSelect.value;
 
-    if (!name && !grade && !month) {
-      showNotification('اكتب اسم الطالب أو اختر صف دراسي أو شهر للبدء في المتابعة.');
+    if (!name && !grade) {
+      showNotification('اكتب اسم الطالب أو اختر صف دراسي للبدء في المتابعة.');
       nameInput.focus();
       return;
     }
@@ -885,8 +855,8 @@ function initSearch() {
 
     // Simulate realistic async delay
     setTimeout(async () => {
-      const results = await searchStudents(name, grade, month);
-      renderSearchResults(results, name, month);
+      const results = await searchStudents(name, grade);
+      renderSearchResults(results, name);
     }, 650);
   }
 
@@ -907,7 +877,6 @@ function initSearch() {
       btn.classList.add('active');
       selectedTeacher = btn.dataset.teacher;
       syncGradeOptions();
-      syncMonthOptions();
 
       // Reset results when teacher changes
       document.getElementById('resultsSection').style.display  = 'none';
